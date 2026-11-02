@@ -4,7 +4,6 @@
 // in recipe.json.
 import { ACESFilmicToneMapping, BackSide, DirectionalLight, Fog, HemisphereLight, Mesh, PCFShadowMap, PerspectiveCamera, PMREMGenerator, Scene, ShaderMaterial, SphereGeometry, WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { patchBlock } from 'patch-block';
 import { block as recipeBlock } from '../recipe.json';
 import { Car } from './car.js';
@@ -94,9 +93,32 @@ canvas.addEventListener('webglcontextlost', (e) => {
 const scene = new Scene();
 scene.fog = new Fog('#e7bd8d', 170, 620);
 const camera = new PerspectiveCamera(38, 1, 0.5, 1400);
+// What the paint and glass reflect: this yard's own sky over its own ground, not a room with bright ceiling panels, which
+// showed in a glossy bonnet as a white patch hiding the paint.
+const reflected = new Scene();
+reflected.add(
+	new Mesh(
+		new SphereGeometry(10, 24, 12),
+		new ShaderMaterial({
+			side: BackSide,
+			depthWrite: false,
+			vertexShader: 'varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+			fragmentShader: `varying vec3 vDir;
+				void main() {
+					float h = vDir.y;
+					vec3 ground = vec3(0.3, 0.25, 0.18);
+					vec3 low = vec3(0.86, 0.68, 0.5);
+					vec3 top = vec3(0.3, 0.45, 0.68);
+					vec3 c = mix(low, top, smoothstep(0.0, 0.55, h));
+					c = mix(ground, c, smoothstep(-0.02, 0.02, h));
+					gl_FragColor = vec4(c, 1.0);
+				}`,
+		}),
+	),
+);
 const pmrem = new PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.3;
+scene.environment = pmrem.fromScene(reflected, 0.02).texture;
+scene.environmentIntensity = 0.55;
 pmrem.dispose();
 scene.add(new HemisphereLight('#c6d8ea', '#8d6a42', 0.75));
 const sun = new DirectionalLight('#ffd3a0', 3.1);
