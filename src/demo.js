@@ -222,7 +222,7 @@ function applyControls() {
 		steering: values.steering,
 		boostMultiplier: values.boost,
 	});
-	car.flipWait = values.flipWait;
+	car.flipWait = values.flip_wait;
 	car.applyTune();
 }
 
