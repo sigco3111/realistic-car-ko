@@ -79,7 +79,7 @@ export const CARS = {
 		tune: {
 			// Tall, heavy, soft and long of travel: the body leans well before the tyres give up.
 			mass: 2150,
-			comHeight: 0.82,
+			comHeight: 0.7,
 			frontWeight: 0.56,
 			travel: 0.32,
 			rest: 0.52,

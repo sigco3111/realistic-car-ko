@@ -29,7 +29,7 @@ const recipe = {
 				essential: true,
 			},
 			{ id: 'assists', label: 'Assists', hint: 'ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.', type: 'toggle', default: true, essential: true },
-			{ id: 'grip', label: 'Grip', hint: 'How much all the tyres hold, on every surface. 1 is real tyres.', type: 'number', min: 0.4, max: 1.6, step: 0.05, default: 1, essential: true },
+			{ id: 'grip', label: 'Grip', hint: 'How much all the tyres hold, on every surface. 1 is real tyres.', type: 'number', min: 0.4, max: 1.35, step: 0.05, default: 1, essential: true },
 			{ id: 'stiffness', label: 'Suspension', hint: 'How stiff the springs are. Low and the body leans and dives; high and it stays flat.', type: 'number', min: 0.6, max: 2.2, step: 0.05, default: 1, essential: true },
 			{ id: 'slow', label: 'Slow motion', hint: 'Slows the whole world down, the car with it. 0 is full speed; 0.9 is a tenth of it.', type: 'number', min: 0, max: 0.9, step: 0.05, default: 0, essential: true },
 			{ id: 'power', label: 'Power', hint: 'The engine, as a share of what this car has.', type: 'number', min: 0.4, max: 2.5, step: 0.05, default: 1 },

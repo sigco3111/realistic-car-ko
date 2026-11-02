@@ -41,7 +41,7 @@
 				"hint": "How much all the tyres hold, on every surface. 1 is real tyres.",
 				"type": "number",
 				"min": 0.4,
-				"max": 1.6,
+				"max": 1.35,
 				"step": 0.05,
 				"default": 1,
 				"essential": true
