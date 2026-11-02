@@ -8,7 +8,7 @@
 | The physics | [Rapier](https://github.com/dimforge/rapier.js) 0.17.3 by Dimforge | Apache-2.0 | through npm, notice in `third-party/LICENSE-rapier.txt` |
 | three.js | the three.js authors | MIT | through npm |
 | Model fitting, ragdoll, effects, sound player, yard, demo | Patch | MIT, © 2026 Patch | `src/` |
-| Muscle car, rally car, pickup | Patch, from the lab's approved models, textures shrunk (`make-models.mjs`) | CC0 | `public/models/` |
+| Rally car, muscle car, pickup | Patch, from the lab's approved models, textures shrunk (`make-models.mjs`) | CC0 | `public/models/` |
 | The mannequin | Patch's 1.8 m scale figure, at about 2,800 triangles, the same build as the crowds block | CC0, Patch | `public/models/mannequin.glb` |
 | The mannequin's clips | [Quaternius, Universal Animation Library 1 and 2](https://quaternius.com/packs/universalanimationlibrary.html), retargeted | CC0 | in `mannequin.glb` |
 | Impact sounds | [Kenney, Impact Sounds](https://kenney.nl/assets/impact-sounds), from Patch's mirror, unedited | CC0 | `public/audio/` |

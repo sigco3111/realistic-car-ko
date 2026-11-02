@@ -48,9 +48,10 @@ export const FOLIO = {
  * gravity makes a real car, slow and floaty beside folio's; the higher it is, the closer the car comes to folio's
  * quickness, at the cost of landing harder than the world around it.
  *
- * `length` is the car's length in metres; `gravity` what pulls on the chassis, m/s².
+ * `length` is the car's length in metres; `gravity` what pulls on the chassis, m/s². An exact match for folio's motion is
+ * 13.1 times the length: 56 for a 4.3 m car.
  */
-export function tuneFor({ length = 5, gravity = 26 } = {}) {
+export function tuneFor({ length = 5, gravity = 45 } = {}) {
 	const s = length / FOLIO.length;
 	// How much slower this car's clock runs than folio's. Accelerations go as s / tau², speeds as s / tau, rates as 1 / tau.
 	const tau = Math.sqrt((FOLIO.gravity * s) / gravity);
@@ -119,7 +120,7 @@ export class Car {
 		const { wheels, size, mass = 1400, position = { x: 0, y: 1, z: 0 }, yaw = 0, groups = {}, tune = {} } = options;
 		this.size = size;
 		this.mass = mass;
-		this.tune = { ...tuneFor({ length: size.length, gravity: options.gravity ?? 26 }), ...tune };
+		this.tune = { ...tuneFor({ length: size.length, gravity: options.gravity ?? 45 }), ...tune };
 		this.tuneBase = { ...this.tune };
 		this.input = { throttle: 0, steer: 0, boost: 0, brake: 0, jump: 0 };
 		this.listeners = new Map();
@@ -141,7 +142,7 @@ export class Car {
 		this.flips = 0;
 		this.airborne = false;
 
-		this.makeChassis(mass, position, yaw, groups);
+		this.makeChassis(mass, position, yaw, groups, wheels);
 		this.controller = world.createVehicleController(this.body);
 		this.controller.indexUpAxis = 1;
 		this.controller.setIndexForwardAxis = 2;
@@ -168,7 +169,7 @@ export class Car {
 		return (t.gravity / (4 * t.stiffness)) * (1 - 1.5 * t.compression * dt);
 	}
 
-	makeChassis(mass, position, yaw, groups) {
+	makeChassis(mass, position, yaw, groups, wheels) {
 		const R = this.RAPIER;
 		const t = this.tune;
 		const { width, height, length } = this.size;
@@ -198,6 +199,19 @@ export class Car {
 			box(0.46 * width, (shoulder - under) / 2, 0.47 * length, (shoulder + under) / 2, 0, true, groups.body),
 			box(0.4 * width, ((height - shoulder) * 0.9) / 2, 0.22 * length, shoulder + ((height - shoulder) * 0.9) / 2, -0.04 * length, false, groups.body),
 		];
+		// Slippery skids at each end, at the height of the model's real underside: when a boost rears the car up or it lands
+		// nose first, they stop the bumpers going through the floor without slowing it down.
+		const clearance = 0.85 * Math.min(...wheels.map((w) => w.y));
+		for (const end of [-1, 1]) {
+			const skid = R.ColliderDesc.cuboid(0.4 * width, 0.04, 0.04)
+				.setTranslation(0, clearance, end * (length / 2 - 0.06))
+				.setMass(0)
+				.setFriction(0)
+				.setFrictionCombineRule(R.CoefficientCombineRule.Min)
+				.setRestitution(0);
+			if (groups.body !== undefined) skid.setCollisionGroups(groups.body);
+			this.world.createCollider(skid, this.body);
+		}
 		// The bumper, wider and lower than the body, touches only loose objects, so they get hit before the body arrives
 		// and fly instead of being pushed along. Needs groups: see the demo.
 		if (groups.bumper !== undefined) box(0.5 * width, 0.36 * height, 0.51 * length, 0.42 * height, 0, false, groups.bumper);

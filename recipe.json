@@ -5,18 +5,18 @@
 			{
 				"id": "car",
 				"label": "Car",
-				"hint": "Which car you drive: a long muscle car, a short quick rally car, or a tall heavy pickup. Same driving code on all three, worked out from each one's size.",
+				"hint": "Which car you drive: a short quick rally car, a long muscle car, or a tall heavy pickup. Same driving code on all three, worked out from each one's size.",
 				"type": "choice",
 				"options": [
-					{
-						"value": "muscle",
-						"label": "Muscle car",
-						"image": "thumbs/cars/muscle.webp"
-					},
 					{
 						"value": "rally",
 						"label": "Rally car",
 						"image": "thumbs/cars/rally.webp"
+					},
+					{
+						"value": "muscle",
+						"label": "Muscle car",
+						"image": "thumbs/cars/muscle.webp"
 					},
 					{
 						"value": "pickup",
@@ -24,7 +24,7 @@
 						"image": "thumbs/cars/pickup.webp"
 					}
 				],
-				"default": "muscle",
+				"default": "rally",
 				"essential": true
 			},
 			{
@@ -68,7 +68,7 @@
 				"min": 9.8,
 				"max": 65,
 				"step": 0.2,
-				"default": 40,
+				"default": 45,
 				"unit": "m/s²"
 			},
 			{
@@ -135,7 +135,7 @@
 		{
 			"files": "models/",
 			"license": "CC0-1.0",
-			"author": "Patch (the muscle car, rally car, pickup and mannequin)"
+			"author": "Patch (the rally car, muscle car, pickup and mannequin)"
 		},
 		{
 			"files": "thumbs/",

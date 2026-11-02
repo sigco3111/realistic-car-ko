@@ -225,13 +225,13 @@ await wait(300);
 const kept = await read();
 check('changing car keeps the view', Math.abs(kept.theta - moved.theta) < 1e-6);
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
-await wait(400);
+await wait(1800);
 const final = await read();
 const state = await page.evaluate(() => window.got.state);
 check('Reset: every control back, and the page told', recipe.controls.every((c) => final.values[c.id] === c.default && state[c.id] === c.default), JSON.stringify(state));
 check('Reset: the view back', Math.abs(final.theta - Math.PI * 0.25) < 1e-6 && Math.abs(final.zoom - 0.6) < 1e-6);
 check('Reset: everyone on their feet', final.falling === 0);
-check('Reset: the car home, on its wheels', Math.hypot(final.x, final.z) < 0.5 && final.wheels === 4 && final.mass === 1450);
+check('Reset: the car home, on its wheels', Math.hypot(final.x, final.z) < 0.5 && final.wheels === 4 && final.mass === 1150);
 const crates = await frame.evaluate(() => {
 	const a = window.__block.app;
 	return a.world.bodies.len?.() ?? 0;

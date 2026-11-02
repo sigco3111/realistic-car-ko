@@ -18,8 +18,8 @@ const params = new URLSearchParams(location.search);
 const STEP = 1 / 60;
 const WORLD_GRAVITY = 9.81;
 const CARS = {
-	muscle: { file: 'models/muscle-car.glb', mass: 1450 },
 	rally: { file: 'models/rally-car.glb', mass: 1150 },
+	muscle: { file: 'models/muscle-car.glb', mass: 1450 },
 	pickup: { file: 'models/pickup-truck.glb', mass: 2100 },
 };
 // Collision groups, as folio's: the bumper only touches loose things; bodies in a ragdoll don't touch each other.
@@ -245,6 +245,7 @@ function reset() {
 	hitStop = 0;
 	placeCar();
 	view.reset(START);
+	view.glideIn();
 }
 
 // Keys
@@ -410,7 +411,7 @@ function stepWorld() {
 function draw(real, scaled, alpha) {
 	model.update(scaled, alpha);
 	for (const f of figures) f.update(scaled);
-	yard.update();
+	yard.update(scaled);
 	effects.update(car, scaled, camera);
 	view.update(model.object.position, real);
 	sun.target.position.set(view.smoothed.x, 0, view.smoothed.z);

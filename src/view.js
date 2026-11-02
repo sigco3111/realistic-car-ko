@@ -17,6 +17,8 @@ export class CarView {
 		this.zoomSmoothed = this.zoom;
 		this.roll = 0;
 		this.rollSpeed = 0;
+		this.glide = 0;
+		this.glideRate = 1;
 		this.fit(tune);
 	}
 
@@ -42,6 +44,13 @@ export class CarView {
 		this.rollSpeed = 0;
 		this.focus.set(at.x, 0, at.z);
 		this.smoothed.copy(this.focus);
+		this.apply();
+	}
+
+	/** Starts further back and glides in to where it should be: what Reset looks like, even when nothing else had moved. */
+	glideIn(seconds = 1.5) {
+		this.glide = 1;
+		this.glideRate = 1 / seconds;
 		this.apply();
 	}
 
@@ -74,11 +83,12 @@ export class CarView {
 		this.rollSpeed += -this.roll * 100 * dt;
 		this.roll += this.rollSpeed * dt;
 		this.rollSpeed *= Math.max(0, 1 - 4 * dt);
+		this.glide = Math.max(0, this.glide - dt * this.glideRate);
 		this.apply();
 	}
 
 	apply() {
-		const r = MathUtils.lerp(this.radiusMin, this.radiusMax, 1 - this.zoomSmoothed);
+		const r = MathUtils.lerp(this.radiusMin, this.radiusMax, 1 - this.zoomSmoothed) * (1 + 0.45 * this.glide * this.glide * (3 - 2 * this.glide));
 		const c = this.camera;
 		c.position.setFromSphericalCoords(r, this.phi, this.theta).add(this.smoothed);
 		c.lookAt(this.smoothed);

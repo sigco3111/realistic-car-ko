@@ -465,6 +465,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	}
 
 	let grassMesh = null;
+	const windTime = { value: 0 };
 	// Long grass, in the islands the ground has been painted for. You drive straight through it.
 	{
 		const blade = new BufferGeometry();
@@ -486,6 +487,21 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 		blade.setAttribute('normal', new BufferAttribute(new Float32Array(verts.length).map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
 		const N = quality.grass ?? 5200;
 		const grass = new InstancedMesh(blade, new MeshStandardMaterial({ vertexColors: true, roughness: 1, side: DoubleSide }), N);
+		// Wind: gusts crossing the yard, more at the tips.
+		grass.material.onBeforeCompile = (shader) => {
+			shader.uniforms.windTime = windTime;
+			shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float windTime;').replace(
+				'#include <begin_vertex>',
+				`#include <begin_vertex>
+				vec2 windAt = instanceMatrix[3].xz;
+				float gust = sin(windAt.x * 0.09 + windAt.y * 0.05 + windTime * 1.3) * 0.5 + 0.5;
+				float sway = sin(windTime * 3.1 + windAt.x * 0.9 + windAt.y * 0.7) * 0.5 + 0.5;
+				float tip = position.y * position.y;
+				transformed.x += tip * (0.18 + 0.5 * gust) * (0.4 + 0.6 * sway);
+				transformed.z += tip * (0.1 + 0.28 * gust) * (0.4 + 0.6 * sway);`,
+			);
+		};
+		grass.material.customProgramCacheKey = () => 'yard-grass';
 		const COLS = ['#8f9234', '#a59a38', '#7c8a33', '#b49a3a', '#6f7f33', '#c59a3a'];
 		const area = GRASS.reduce((sum, g) => sum + g[2] * g[3], 0);
 		let i = 0;
@@ -600,7 +616,8 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	for (const it of coneItems) kinds.set(it.body.handle, 'plate');
 
 	return {
-		update() {
+		update(dt = 0) {
+			windTime.value += dt;
 			for (const g of groupsOfLoose) g.update(false);
 		},
 		reset() {

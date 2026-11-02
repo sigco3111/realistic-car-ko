@@ -367,12 +367,22 @@ const table = (rows) => {
 	for (const r of rows) console.log(r.map((c, i) => String(c).padStart(w[i])).join('  '));
 };
 
-const cars = [
-	['folio', (w) => folioCar(w), FOLIO.length],
-	...[26, 40, 65].map((g) => [`g=${g}`, (w) => ourCar(w, { gravity: g }), 5.02]),
-	['40 .6', (w) => ourCar(w, { gravity: 40, tune: { comHeight: 0.6 } }), 5.02],
-	['40 .5', (w) => ourCar(w, { gravity: 40, tune: { comHeight: 0.5 } }), 5.02],
-];
+// The demo's default car, the rally car, measured from its model. --muscle for the muscle car.
+const RALLY = {
+	length: 4.31,
+	width: 1.94,
+	height: 1.49,
+	mass: 1150,
+	wheels: [
+		{ x: 0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
+		{ x: -0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
+		{ x: 0.78, y: 0.335, z: -1.25, radius: 0.335 },
+		{ x: -0.78, y: 0.335, z: -1.25, radius: 0.335 },
+	],
+};
+const body = process.argv.includes('--muscle') ? {} : RALLY;
+const L = body.length ?? 5.02;
+const cars = [['folio', (w) => folioCar(w), FOLIO.length], ...(process.argv.includes('--com') ? [0.625, 0.58, 0.54, 0.5].map((h) => [`c=${h}`, (w) => ourCar(w, { gravity: 45, ...body, tune: { comHeight: h } }), L]) : [26, 40, 45, 50, 65].map((g) => [`g=${g}`, (w) => ourCar(w, { gravity: g, ...body }), L]))];
 const results = cars.map(([name, make, L]) => ({ name, L, m: measures(make) }));
 const n = (x, d = 2) => (x === null || x === undefined ? '-' : x.toFixed(d));
 const rows = [['', ...results.map((r) => r.name)]];
@@ -422,7 +432,7 @@ for (const [name, q] of [
 	['nose', { x: 0.7071, y: 0, z: 0, w: 0.7071 }],
 	['tail', { x: -0.7071, y: 0, z: 0, w: 0.7071 }],
 ]) {
-	for (const [cname, opts] of [['muscle', {}], ['pickup', { length: 5.58, width: 2.27, height: 2.09, mass: 2100 }]]) {
+	for (const [cname, opts] of [['rally', RALLY], ['muscle', {}], ['pickup', { length: 5.58, width: 2.27, height: 2.09, mass: 2100 }]]) {
 		const w = freshWorld();
 		const c = ourCar(w, { gravity: 40, ...opts });
 		c.car.flipWait = 2;

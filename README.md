@@ -7,7 +7,7 @@ engine: three
 
 A raycast car on Rapier that's a joy to drive, at full size: instant steering, a big jump, boost, and it rights itself when it lands on its roof. Give it any model with separate wheels.
 
-The driving is [folio-2025](https://github.com/brunosimon/folio-2025)'s by **Bruno Simon** (MIT), ported and retuned from his 3 m toy to any length, with every number worked out from the car's size. In the live demo, drive our muscle car, rally car or pickup round a yard, over ramps, through crates and into mannequins, which go flying as Rapier ragdolls. WASD drives, Shift boosts, Space jumps, B brakes and R resets. Drag turns the view and scroll zooms.
+The driving is [folio-2025](https://github.com/brunosimon/folio-2025)'s by **Bruno Simon** (MIT), ported and retuned from his 3 m toy to any length, with every number worked out from the car's size. In the live demo, drive our rally car, muscle car or pickup round a yard, over ramps, through crates and into mannequins, which go flying as Rapier ragdolls. WASD drives, Shift boosts, Space jumps, B brakes and R resets. Drag turns the view and scroll zooms.
 
 Driving and camera: folio-2025 by Bruno Simon (MIT), on Rapier (Apache-2.0). Code here is MIT, art and sound are CC0.
 
@@ -29,7 +29,7 @@ world.timestep = STEP;
 // Wheels called part_wheel_fl, fr, rl, rr, or say what yours are called.
 const names = { fl: 'WheelFL', fr: 'WheelFR', rl: 'WheelRL', rr: 'WheelRR' };
 const { wheels, size } = measureCar(gltf.scene, names);
-const car = new Car(RAPIER, world, { wheels, size, mass: 1400, gravity: 40, position: { x: 0, y: 0.1, z: 0 } });
+const car = new Car(RAPIER, world, { wheels, size, mass: 1150, gravity: 45, position: { x: 0, y: 0.1, z: 0 } });
 const look = new CarModel(gltf.scene, car, { names, steerNames: {} });
 scene.add(look.object);
 const view = new CarView(camera, car.tune);
@@ -57,11 +57,11 @@ Hold `jump` for about 0.18 s, not for as long as the key is down, or the car sta
 
 `gravity` is the one choice that matters: it's what pulls on the chassis, in m/s². Every other number comes from it and the car's length (`tuneFor`), so the car stays balanced whatever you pick.
 
-| `gravity` | A 5 m car |
+| `gravity` | The 4.3 m rally car, 90° of full lock in (folio's 3 m car: 1.00 s) |
 |---|---|
-| 65 | Moves as folio's 3 m car does: 90° of full lock in 1.02 s against its 1.00 |
-| 40 | The demo's default: 90° in 1.28 s, most of the quickness and still a car |
-| 26 | Reads as a real heavy car: 90° in 1.57 s |
+| 65 | 0.92 s. Moves even quicker than folio's. 56 is the exact match at this length |
+| 45 | 1.10 s, the demo's default: nearly folio's quickness and still a car |
+| 26 | 1.43 s: reads as a real heavy car |
 | 9.8 | Real gravity, slow and floaty beside the others |
 
 It only acts on the chassis, through its gravity scale, so crates and bodies keep your world's gravity. Change anything else in `car.tune`, then call `car.applyTune()`. `frictionSlip` is grip, `engine` and `topSpeed` are power, `steering` is full lock in radians.
@@ -81,7 +81,7 @@ It only acts on the chassis, through its gravity scale, so crates and bodies kee
 - **It doesn't really drift.** Past the grip limit it mostly runs wide, with about 5° of slide. Low grip slides more, but there's no handbrake turn or countersteer assist.
 - **High gravity lands hard.** The chassis falls faster than the world around it, which you may notice next to slower debris.
 - **Very fast.** With boost at the default it passes 60 m/s, so it needs a big world: the yard is 300 m across. Lower `power` or `topSpeedBoost` for small levels.
-- **A long car on boost rears up until its tail touches.** Folio's short car rears much further. Lower `comHeight` to keep the nose down.
+- **On boost it rears up only until its tail touches**, about 9° on the rally car, because a real car's overhang is much longer than folio's. Folio's own car rears far more.
 - **Bumps.** It's only been driven on flat ground and smooth ramps. Rough terrain isn't tested.
 - **Wheels clip the arches** on the hardest landings, because the drawn wheel stops at the arch and the physics doesn't (`bump` and `droop` on `CarModel`).
 - **Rapier's version changes it.** This is tuned on 0.17.3, the version folio ships. On 0.21, folio's own car stays much flatter on boost, so re-check the feel if you upgrade.

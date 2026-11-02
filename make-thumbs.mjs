@@ -44,7 +44,7 @@ for (const [id] of cars) {
 	console.log(`${id}: ${fs.statSync(webp).size} bytes`);
 }
 
-// The cover: a mannequin in the air over the bonnet, crates going.
+// The cover: the rally car, a mannequin in the air over the bonnet.
 const cover = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 await cover.goto(url);
 await cover.waitForFunction(() => window.__block?.times?.ready, null, { timeout: 60000 });
@@ -56,6 +56,8 @@ await cover.evaluate(() => {
 	a.view.radiusMax = 30;
 	a.view.zoom = 1;
 	a.view.zoomSmoothed = 1;
+	a.view.theta = Math.PI * 0.25 + 1.05;
+	a.view.phi = 1.02;
 	a.script = (car) => {
 		const dx = f.home.position.x - car.position.x;
 		const dz = f.home.position.z - car.position.z;

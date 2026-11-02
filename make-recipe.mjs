@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const images = !process.argv.includes('--no-images');
 export const cars = [
-	['muscle', 'Muscle car'],
 	['rally', 'Rally car'],
+	['muscle', 'Muscle car'],
 	['pickup', 'Pickup'],
 ];
 
@@ -22,16 +22,16 @@ const recipe = {
 			{
 				id: 'car',
 				label: 'Car',
-				hint: 'Which car you drive: a long muscle car, a short quick rally car, or a tall heavy pickup. Same driving code on all three, worked out from each one\'s size.',
+				hint: 'Which car you drive: a short quick rally car, a long muscle car, or a tall heavy pickup. Same driving code on all three, worked out from each one\'s size.',
 				type: 'choice',
 				options: cars.map(([value, label]) => ({ value, label, ...(images ? { image: `thumbs/cars/${value}.webp` } : {}) })),
-				default: 'muscle',
+				default: 'rally',
 				essential: true,
 			},
 			{ id: 'grip', label: 'Grip', hint: 'How hard the tyres hold. Low and it slides wide through every turn; high and it goes where it points.', type: 'number', min: 0.2, max: 2, step: 0.05, default: 1, essential: true },
 			{ id: 'power', label: 'Power', hint: 'The engine and its top speed together.', type: 'number', min: 0.3, max: 2, step: 0.05, default: 1, essential: true },
 			{ id: 'slow', label: 'Slow motion', hint: 'Slows the whole world down, the car with it. 0 is full speed; 0.9 is a tenth of it.', type: 'number', min: 0, max: 0.9, step: 0.05, default: 0, essential: true },
-			{ id: 'gravity', label: 'Car gravity', hint: 'What pulls on the car; the rest follows from this and its length. 65 moves as the 3 m car in folio-2025 does; 9.8 like a real car.', type: 'number', min: 9.8, max: 65, step: 0.2, default: 40, unit: 'm/s²' },
+			{ id: 'gravity', label: 'Car gravity', hint: 'What pulls on the car; the rest follows from this and its length. 65 moves as the 3 m car in folio-2025 does; 9.8 like a real car.', type: 'number', min: 9.8, max: 65, step: 0.2, default: 45, unit: 'm/s²' },
 			{ id: 'steering', label: 'Full lock', hint: 'How far the front wheels turn, in radians.', type: 'number', min: 0.2, max: 0.9, step: 0.01, default: 0.5, unit: 'rad' },
 			{ id: 'boost', label: 'Boost', hint: 'How many times the engine boost adds. 0 turns it off.', type: 'number', min: 0, max: 5, step: 0.1, default: 2 },
 			{ id: 'flip_wait', label: 'Seconds on its roof', hint: 'How long it lies upside down before it rights itself.', type: 'number', min: 0.2, max: 8, step: 0.1, default: 2, unit: 's' },
@@ -43,7 +43,7 @@ const recipe = {
 		{ files: 'assets/', license: 'MIT', source: 'https://github.com/brunosimon/folio-2025', author: 'Bruno Simon (folio-2025: the driving and the camera, ported)' },
 		{ files: 'assets/', license: 'Apache-2.0', source: 'https://github.com/dimforge/rapier.js', author: 'Dimforge (Rapier, the physics)' },
 		{ files: 'assets/', license: 'MIT', source: 'https://github.com/mrdoob/three.js', author: 'three.js authors' },
-		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the muscle car, rally car, pickup and mannequin)' },
+		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the rally car, muscle car, pickup and mannequin)' },
 		{ files: 'thumbs/', license: 'CC0-1.0', author: 'Patch (stills of this demo)' },
 	],
 };
