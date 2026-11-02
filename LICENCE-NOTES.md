@@ -2,12 +2,13 @@
 
 | Part | From | Licence | In this repo |
 |---|---|---|---|
-| The driving: engine, brakes, suspension, jump, upside-down and stuck tests | [folio-2025](https://github.com/brunosimon/folio-2025) by Bruno Simon, `sources/Game/Physics/PhysicsVehicle.js` and `Player.js`, commit 41046b5 | MIT, © 2025 Bruno Simon | ported in `src/car.js`, notice in `third-party/LICENSE-folio-2025.txt` |
-| The camera | the same repo, `sources/Game/View.js` | MIT, © 2025 Bruno Simon | ported in `src/view.js` |
-| Scaling to any size, the flip's sums, `tools/bench.mjs` | Patch | MIT, © 2026 Patch | `src/car.js`, `tools/` |
+| The tyre: Pacejka curve, combined slip, load sensitivity | [Godot Advanced Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle) by Dechode, `scenes/vehicle/tire_models/`, commit e055cc3 | MIT, © 2021 Dechode | ported and changed in `src/car.js`, notice in `third-party/LICENSE-godot-advanced-vehicle.txt` |
+| Gearbox logic, damping ratios, anti-roll bars, brake balance, ABS, traction control, steering assists | [Godot Easy Vehicle Physics](https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics), `addons/gevp/scripts/vehicle.gd` and `wheel.gd`, commit c392257 | MIT, © 2024 David Shoemaker, © 2021 Dechode, © 2024 Baron Wittman | ported and changed in `src/car.js`, notice in `third-party/LICENSE-godot-easy-vehicle-physics.txt` |
+| What counts as upside down, and hopping to turn over | [folio-2025](https://github.com/brunosimon/folio-2025) by Bruno Simon, `sources/Game/Physics/PhysicsVehicle.js`, commit 41046b5 | MIT, © 2025 Bruno Simon | ported in `src/car.js`, notice in `third-party/LICENSE-folio-2025.txt` |
+| A slip curve set by its falloff, tyre relaxation, wheel speeds in small steps, surfaces, the three cars' numbers, `tools/bench.mjs` | Patch | MIT, © 2026 Patch | `src/car.js`, `src/cars.js`, `tools/` |
 | The physics | [Rapier](https://github.com/dimforge/rapier.js) 0.17.3 by Dimforge | Apache-2.0 | through npm, notice in `third-party/LICENSE-rapier.txt` |
 | three.js | the three.js authors | MIT | through npm |
-| Model fitting, ragdoll, effects, sound player, yard, demo | Patch | MIT, © 2026 Patch | `src/` |
+| Model fitting, camera, ragdoll, effects, sound player, yard, demo | Patch | MIT, © 2026 Patch | `src/` |
 | Rally car, muscle car, pickup | Patch, from the lab's approved models, textures shrunk (`make-models.mjs`) | CC0 | `public/models/` |
 | The mannequin | Patch's 1.8 m scale figure, at about 2,800 triangles, the same build as the crowds block | CC0, Patch | `public/models/mannequin.glb` |
 | The mannequin's clips | [Quaternius, Universal Animation Library 1 and 2](https://quaternius.com/packs/universalanimationlibrary.html), retargeted | CC0 | in `mannequin.glb` |
@@ -16,4 +17,4 @@
 
 The yard's ground, containers, ramps, crates, drums, cones, grass, trees and sky are all drawn by `src/yard.js` and `src/demo.js`.
 
-Only folio-2025's driving and camera code was used. Its art and sound were not copied: its `static/sounds/` folder has a licence of its own.
+No art, models or sound from those projects are here. Godot Easy Vehicle Physics' demo car is Kenney's and isn't used. GPL simulators such as TORCS and Speed Dreams were not looked at for code.

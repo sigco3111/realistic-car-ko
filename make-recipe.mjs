@@ -1,8 +1,8 @@
 // Writes recipe.json, the car block's demo recipe (mode browser + block): `node make-recipe.mjs`.
 // demo.js reads its controls from that file.
 //
-// For people: which car, with its picture, then grip, power and slow motion. WASD drives. The rest is for agents, in this
-// recipe with its range and default. `--no-images` leaves the pictures out.
+// For people: which car, with its picture, then assists, grip, suspension and slow motion. WASD drives and Space is the
+// handbrake. The rest is for agents, in this recipe with its range and default. `--no-images` leaves the pictures out.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,28 +22,32 @@ const recipe = {
 			{
 				id: 'car',
 				label: 'Car',
-				hint: 'Which car you drive: a short quick rally car, a long muscle car, or a tall heavy pickup. Same driving code on all three, worked out from each one\'s size.',
+				hint: 'A light four-wheel-drive rally car, a heavy rear-drive muscle car, or a tall soft pickup. Same simulation, different numbers.',
 				type: 'choice',
 				options: cars.map(([value, label]) => ({ value, label, ...(images ? { image: `thumbs/cars/${value}.webp` } : {}) })),
 				default: 'rally',
 				essential: true,
 			},
-			{ id: 'grip', label: 'Grip', hint: 'How hard the tyres hold. Low and it slides wide through every turn; high and it goes where it points.', type: 'number', min: 0.2, max: 2, step: 0.05, default: 1, essential: true },
-			{ id: 'power', label: 'Power', hint: 'The engine and its top speed together.', type: 'number', min: 0.3, max: 2, step: 0.05, default: 1, essential: true },
+			{ id: 'assists', label: 'Assists', hint: 'ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.', type: 'toggle', default: true, essential: true },
+			{ id: 'grip', label: 'Grip', hint: 'How much all the tyres hold, on every surface. 1 is real tyres.', type: 'number', min: 0.4, max: 1.6, step: 0.05, default: 1, essential: true },
+			{ id: 'stiffness', label: 'Suspension', hint: 'How stiff the springs are. Low and the body leans and dives; high and it stays flat.', type: 'number', min: 0.6, max: 2.2, step: 0.05, default: 1, essential: true },
 			{ id: 'slow', label: 'Slow motion', hint: 'Slows the whole world down, the car with it. 0 is full speed; 0.9 is a tenth of it.', type: 'number', min: 0, max: 0.9, step: 0.05, default: 0, essential: true },
-			{ id: 'gravity', label: 'Car gravity', hint: 'What pulls on the car; the rest follows from this and its length. 65 moves as the 3 m car in folio-2025 does; 9.8 like a real car.', type: 'number', min: 9.8, max: 65, step: 0.2, default: 45, unit: 'm/s²' },
-			{ id: 'steering', label: 'Full lock', hint: 'How far the front wheels turn, in radians.', type: 'number', min: 0.2, max: 0.9, step: 0.01, default: 0.5, unit: 'rad' },
-			{ id: 'boost', label: 'Boost', hint: 'How many times the engine boost adds. 0 turns it off.', type: 'number', min: 0, max: 5, step: 0.1, default: 2 },
-			{ id: 'flip_wait', label: 'Seconds on its roof', hint: 'How long it lies upside down before it rights itself.', type: 'number', min: 0.2, max: 8, step: 0.1, default: 2, unit: 's' },
+			{ id: 'power', label: 'Power', hint: 'The engine, as a share of what this car has.', type: 'number', min: 0.4, max: 2.5, step: 0.05, default: 1 },
+			{ id: 'drive', label: 'Front drive', hint: 'How much drive goes to the front: 0 is rear drive, 1 front drive. Below 0, what this car has.', type: 'number', min: -0.05, max: 1, step: 0.05, default: -0.05 },
+			{ id: 'lock', label: 'Steering lock', hint: 'How far the front wheels can turn, as a share of what this car has.', type: 'number', min: 0.5, max: 1.4, step: 0.05, default: 1 },
+			{ id: 'flip_wait', label: 'Seconds on its roof', hint: 'How long it lies on its roof or side before it rights itself.', type: 'number', min: 0.5, max: 10, step: 0.5, default: 3, unit: 's' },
 		],
 		presets: [],
-		triggers: [{ id: 'reset', label: 'Reset', hint: 'Back to the start: every control, the car, the crates, the mannequin and the view.' }],
+		triggers: [{ id: 'reset', label: 'Reset', hint: 'Back to the start: every control, the car, the crates, the mannequins and the view.' }],
 	},
 	credits: [
-		{ files: 'assets/', license: 'MIT', source: 'https://github.com/brunosimon/folio-2025', author: 'Bruno Simon (folio-2025: the driving and the camera, ported)' },
+		{ files: 'assets/', license: 'MIT', source: 'https://github.com/Dechode/Godot-Advanced-Vehicle', author: 'Dechode (Godot Advanced Vehicle: the tyre model, ported)' },
+		{ files: 'assets/', license: 'MIT', source: 'https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics', author: 'David Shoemaker, Dechode and Baron Wittman (Godot Easy Vehicle Physics: gearbox, suspension rates and assists, ported)' },
+		{ files: 'assets/', license: 'MIT', source: 'https://github.com/brunosimon/folio-2025', author: 'Bruno Simon (folio-2025: righting the car)' },
 		{ files: 'assets/', license: 'Apache-2.0', source: 'https://github.com/dimforge/rapier.js', author: 'Dimforge (Rapier, the physics)' },
 		{ files: 'assets/', license: 'MIT', source: 'https://github.com/mrdoob/three.js', author: 'three.js authors' },
 		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the rally car, muscle car, pickup and mannequin)' },
+		{ files: 'audio/', license: 'CC0-1.0', source: 'https://kenney.nl/assets/impact-sounds', author: 'Kenney (Impact Sounds)' },
 		{ files: 'thumbs/', license: 'CC0-1.0', author: 'Patch (stills of this demo)' },
 	],
 };

@@ -82,13 +82,12 @@ function merged(root, keep) {
  * `view.update(dt, alpha)` once a frame after stepping, with alpha how far the frame is between the last two steps.
  */
 export class CarModel {
-	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr' }, bump = 0.09, droop = 0.2 } = {}) {
+	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr' }, bump = 0.13, droop = 0.2 } = {}) {
 		this.car = car;
 		this.object = new Group();
 		this.object.name = 'car';
 		this.bump = bump;
 		this.droop = droop;
-		this.steer = 0;
 		model.updateMatrixWorld(true);
 		const moving = new Set([...Object.values(names), ...Object.values(steerNames)]);
 		for (const mesh of merged(model, (o) => moving.has(o.name))) this.object.add(mesh);
@@ -122,7 +121,6 @@ export class CarModel {
 	/** Puts this model on another Car of the same shape, for when the physics are rebuilt. */
 	attach(car) {
 		this.car = car;
-		this.steer = 0;
 		for (const n of this.nodes.values()) n.y = 0;
 		this.snap();
 	}
@@ -150,16 +148,13 @@ export class CarModel {
 		const qa = prev.quaternion;
 		const qb = cur.quaternion;
 		object.quaternion.set(qa.x, qa.y, qa.z, qa.w).slerp(target.set(qb.x, qb.y, qb.z, qb.w), alpha);
-		const t = car.tune;
-		const steerWanted = car.input.steer * t.steering;
-		this.steer += (steerWanted - this.steer) * Math.min(1, dt * 16);
 		for (const w of car.wheels) {
 			const n = this.nodes.get(w.key);
-			const wanted = Math.min(this.bump, Math.max(-this.droop, w.ride - w.suspension));
-			n.y += (wanted - n.y) * Math.min(1, dt * 25);
+			const wanted = Math.min(this.bump, Math.max(-this.droop, w.ride - w.length));
+			n.y += (wanted - n.y) * Math.min(1, dt * 40);
 			n.holder.position.y = w.y + n.y;
-			n.holder.rotation.y = w.front ? this.steer : 0;
-			n.spin.rotation.x = w.spin;
+			n.holder.rotation.y = w.front ? w.steerAngle : 0;
+			n.spin.rotation.x = w.angle;
 		}
 	}
 }

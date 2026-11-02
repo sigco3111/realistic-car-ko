@@ -14,13 +14,13 @@ export const COURSE_YAW = YAW;
 
 // Islands of long grass: where along the course, and how big.
 const GRASS = [
-	[8, 20, 11, 7],
-	[30, 22, 8, 12],
+	[0, 22, 11, 7],
+	[26, 32, 9, 11],
 	[-10, 18, 6, 9],
 	[6, -24, 10, 6],
 	[44, -22, 14, 8],
 	[-24, -26, 12, 9],
-	[84, 22, 16, 11],
+	[108, 34, 14, 11],
 	[100, -14, 12, 16],
 	[-70, 8, 14, 12],
 	[-52, 62, 20, 10],
@@ -50,112 +50,98 @@ const canvasOf = (size, draw) => {
 	return t;
 };
 
-// Everything on the ground that's bigger than a slab joint, for the whole yard.
+// The tarmac: a road straight through the lot, and a big circle off to its left to slide around on.
+const ROAD = { half: 8, from: -135, to: 140 };
+const CIRCLE = { u: 62, v: 30, r: 23 };
+
+/** What's on the ground here: 'tarmac', 'gravel' or 'grass'. */
+export function surfaceAt(x, z) {
+	const u = x * forward.x + z * forward.z;
+	const v = x * across.x + z * across.z;
+	if (Math.abs(v) < ROAD.half && u > ROAD.from && u < ROAD.to) return 'tarmac';
+	if (Math.hypot(u - CIRCLE.u, v - CIRCLE.v) < CIRCLE.r) return 'tarmac';
+	for (const [gu, gv, ru, rv] of GRASS) {
+		const a = (u - gu) / ru;
+		const b = (v - gv) / rv;
+		if (a * a + b * b < 1) return 'grass';
+	}
+	return 'gravel';
+}
+
+// Everything on the ground that's bigger than a stone, for the whole yard.
 function groundPaint() {
 	return canvasOf(2048, (g, n) => {
 		const k = n / (YARD * 2);
 		const X = (x) => (x + YARD) * k;
-		g.fillStyle = '#d2bf9c';
+		g.fillStyle = '#cdb793';
 		g.fillRect(0, 0, n, n);
-		// Soft patches of weather: darker where it's stayed wet, warmer where the dust has blown.
-		for (let i = 0; i < 900; i++) {
+		// Soft patches of weather on the gravel: packed darker where it's driven, paler where it's loose.
+		for (let i = 0; i < 1100; i++) {
 			const x = random() * n;
 			const y = random() * n;
-			const r = 20 + random() * 150;
+			const r = 16 + random() * 120;
 			const dark = random() < 0.55;
 			const grad = g.createRadialGradient(x, y, 0, x, y, r);
-			const col = dark ? '84,72,58' : '226,196,150';
-			grad.addColorStop(0, `rgba(${col},${0.05 + random() * 0.09})`);
+			const col = dark ? '112,92,66' : '232,208,168';
+			grad.addColorStop(0, `rgba(${col},${0.06 + random() * 0.11})`);
 			grad.addColorStop(1, `rgba(${col},0)`);
 			g.fillStyle = grad;
 			g.fillRect(x - r, y - r, r * 2, r * 2);
 		}
-		// Slab joints, turned to run with the course.
-		g.save();
-		g.translate(n / 2, n / 2);
-		g.rotate(Math.PI / 4);
-		const slab = 8 * k;
-		// Slabs that were poured on another day.
-		for (let i = 0; i < 420; i++) {
-			const a = Math.floor((random() - 0.5) * 60) * slab;
-			const b = Math.floor((random() - 0.5) * 60) * slab;
-			g.fillStyle = random() < 0.5 ? `rgba(70,60,48,${0.03 + random() * 0.07})` : `rgba(235,220,190,${0.03 + random() * 0.06})`;
-			g.fillRect(a, b, slab, slab);
-		}
-		// Where the grass comes through.
-		g.restore();
+		// Grass, under the long grass.
 		for (const [u, v, ru, rv] of GRASS) {
 			const at = place(u, v);
 			g.save();
 			g.translate(X(at.x), X(at.z));
 			g.rotate(Math.PI / 4);
 			g.scale(ru * k, rv * k);
-			const grad = g.createRadialGradient(0, 0, 0.1, 0, 0, 1.25);
-			grad.addColorStop(0, 'rgba(84,88,40,0.9)');
-			grad.addColorStop(0.72, 'rgba(92,90,42,0.65)');
+			const grad = g.createRadialGradient(0, 0, 0.1, 0, 0, 1.2);
+			grad.addColorStop(0, 'rgba(84,88,40,0.92)');
+			grad.addColorStop(0.78, 'rgba(92,90,42,0.75)');
 			grad.addColorStop(1, 'rgba(120,104,60,0)');
 			g.fillStyle = grad;
 			g.beginPath();
-			g.arc(0, 0, 1.25, 0, 7);
+			g.arc(0, 0, 1.2, 0, 7);
 			g.fill();
 			g.restore();
 		}
+		// In the course's own axes from here on: u up the road, v to its left.
 		g.save();
 		g.translate(n / 2, n / 2);
-		g.rotate(Math.PI / 4);
-		// The paint: a lane up the middle, a turning circle, parking bays.
-		const paint = (alpha = 0.78) => `rgba(240,226,190,${alpha})`;
-		g.lineWidth = 0.42 * k;
-		g.strokeStyle = 'rgba(232,150,52,0.8)';
-		g.beginPath();
-		g.arc(-92 * k, 62 * k, 24 * k, 0, Math.PI * 2);
-		g.stroke();
-		g.beginPath();
-		g.arc(-92 * k, 62 * k, 19 * k, 0, Math.PI * 2);
-		g.stroke();
-		g.strokeStyle = paint(0.6);
-		g.lineWidth = 0.2 * k;
-		for (let i = 0; i < 16; i++) {
+		g.rotate((3 * Math.PI) / 4);
+		const road = () => {
 			g.beginPath();
-			g.moveTo((-60 + i * 4.4) * k, -60 * k);
-			g.lineTo((-60 + i * 4.4) * k, -70 * k);
-			g.stroke();
+			g.rect(-ROAD.half * k, ROAD.from * k, ROAD.half * 2 * k, (ROAD.to - ROAD.from) * k);
+			g.moveTo((CIRCLE.v + CIRCLE.r) * k, CIRCLE.u * k);
+			g.arc(CIRCLE.v * k, CIRCLE.u * k, CIRCLE.r * k, 0, 6.2832);
+		};
+		g.fillStyle = '#4b4b4d';
+		road();
+		g.fill();
+		// A worn edge: the gravel spills over it.
+		g.strokeStyle = 'rgba(190,168,132,0.5)';
+		g.lineWidth = 0.5 * k;
+		road();
+		g.stroke();
+		// Tarmac patches and old rubber on the racing line.
+		for (let i = 0; i < 90; i++) {
+			const u = (ROAD.from + random() * (ROAD.to - ROAD.from)) * k;
+			const v = ((random() - 0.5) * ROAD.half * 1.8) * k;
+			g.fillStyle = `rgba(${random() < 0.5 ? '30,30,32' : '92,92,94'},${0.08 + random() * 0.16})`;
+			g.fillRect(v, u, (1 + random() * 3) * k, (2 + random() * 6) * k);
 		}
-		// Oil, and old tyre marks to say people have been at this before.
-		for (let i = 0; i < 60; i++) {
-			const x = (random() - 0.5) * n;
-			const y = (random() - 0.5) * n;
-			const r = (0.5 + random() * 1.6) * k;
-			g.fillStyle = `rgba(30,24,20,${0.12 + random() * 0.22})`;
-			g.beginPath();
-			g.ellipse(x, y, r, r * 0.6, random() * 3, 0, 7);
-			g.fill();
-		}
-		g.strokeStyle = 'rgba(30,26,22,0.13)';
+		g.strokeStyle = 'rgba(14,12,12,0.28)';
 		g.lineCap = 'round';
-		for (let i = 0; i < 26; i++) {
-			let x = (random() - 0.5) * n * 0.8;
-			let y = (random() - 0.5) * n * 0.8;
-			let a = random() * 7;
-			const curve = (random() - 0.5) * 0.12;
-			g.lineWidth = 0.3 * k;
-			for (const side of [-0.8, 0.8]) {
-				let px = x + Math.cos(a + 1.57) * side * k;
-				let py = y + Math.sin(a + 1.57) * side * k;
-				let qa = a;
+		for (let i = 0; i < 14; i++) {
+			// Rubber swept round the circle.
+			const r = (CIRCLE.r - 3 - random() * 12) * k;
+			const start = random() * 6.28;
+			g.lineWidth = 0.28 * k;
+			for (const off of [0, 1.5 * k]) {
 				g.beginPath();
-				g.moveTo(px, py);
-				for (let t = 0; t < 40; t++) {
-					qa += curve;
-					px += Math.cos(qa) * 0.9 * k;
-					py += Math.sin(qa) * 0.9 * k;
-					g.lineTo(px, py);
-				}
+				g.arc(CIRCLE.v * k, CIRCLE.u * k, r + off, start, start + 1 + random() * 2);
 				g.stroke();
 			}
-			a += 0;
-			x += 0;
-			y += 0;
 		}
 		g.restore();
 	});
@@ -380,15 +366,11 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 				vec3 paintColour = texture2D(paintMap, vec2(yardUv.x, 1.0 - yardUv.y)).rgb;
 				vec3 groundColour = paintColour;
 				vec2 lane = vec2(dot(vYard, courseForward.xy), dot(vYard, courseAcross.xy));
-				vec2 slabAt = abs(fract(lane / 8.0) - 0.5) * 8.0;
-				vec2 slabWidth = max(fwidth(lane) * 0.7, vec2(0.03));
-				float joint;
-				joint = 1.0 - min(smoothstep(3.97 - slabWidth.x, 3.97, slabAt.x) + smoothstep(3.97 - slabWidth.y, 3.97, slabAt.y), 1.0);
-				groundColour *= mix(0.72, 1.0, joint);
-				float dashAcross = 1.0 - smoothstep(0.13, 0.13 + fwidth(lane.y), abs(abs(lane.y) - 7.0));
-				float dashAlong = step(fract(lane.x / 5.8), 0.55);
-				float inLot = 1.0 - smoothstep(140.0, 141.0, abs(lane.x));
-				groundColour = mix(groundColour, vec3(0.93, 0.87, 0.72), dashAcross * dashAlong * inLot * 0.85);
+				float inRoad = (1.0 - smoothstep(139.0, 140.0, lane.x)) * smoothstep(-135.0, -134.0, lane.x);
+				float aa = fwidth(lane.y);
+				float centre = (1.0 - smoothstep(0.09, 0.09 + aa, abs(lane.y))) * step(fract(lane.x / 7.0), 0.45);
+				float edges = 1.0 - smoothstep(0.1, 0.1 + aa, abs(abs(lane.y) - 7.3));
+				groundColour = mix(groundColour, vec3(0.92, 0.88, 0.76), max(centre, edges) * inRoad * 0.85);
 				diffuseColor.rgb *= mix(vec3(0.42, 0.36, 0.26), groundColour, edge.x * edge.y);`,
 			);
 	};
@@ -418,7 +400,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	wall(-YARD, 0, Math.PI / 2, edgeCount);
 	wall(YARD, 0, Math.PI / 2, edgeCount);
 	// A few in the yard, to drive round.
-	for (const [u, v, turn, n] of [[92, -44, 0.4, 2], [58, 62, -0.5, 2], [-54, -60, 1.1, 2], [-74, 38, 0.2, 1], [130, 30, 1.5, 2]]) {
+	for (const [u, v, turn, n] of [[110, -44, 0.4, 2], [58, 70, -0.5, 2], [-54, -60, 1.1, 2], [-74, 38, 0.2, 1], [120, 62, 1.5, 2]]) {
 		const at = place(u, v);
 		wall(at.x, at.z, YAW + Math.PI / 2 + turn, n, 0.5);
 	}
@@ -549,10 +531,10 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 		}
 		world.createCollider(R.ColliderDesc.cuboid(width / 2, height / 2, 0.15).setTranslation(0, height / 2, length - 0.15).setFriction(0.3).setCollisionGroups(groups.solid), body);
 	};
-	addRamp(34, 0, YAW, 11, 18, 3.6); // Straight ahead
-	addRamp(-38, 22, YAW + Math.PI, 8, 12, 1.9); // A small one behind the start
-	addRamp(70, -46, YAW + 0.9, 13, 24, 5.2); // The big one, for boosting at
-	addRamp(-30, -70, YAW + 2.4, 10, 16, 2.8);
+	addRamp(30, -34, YAW, 11, 18, 2.6); // In the gravel, on the right
+	addRamp(-38, 22, YAW + Math.PI, 8, 14, 1.4); // A small one behind the start
+	addRamp(76, -46, YAW + 0.9, 13, 24, 3.4); // The big one
+	addRamp(-30, -70, YAW + 2.4, 10, 16, 2.2);
 
 	// Loose things
 	const dyn = (x, y, z, rotation, desc, opts = {}) => {
@@ -579,12 +561,12 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 			for (let i = 0; i < n; i++) crate(u, v + (i - (n - 1) / 2) * (size + 0.02), size / 2 + row * size, size, YAW + turn);
 		}
 	};
-	pyramid(22, -9.5, 4, 1.15);
-	pyramid(27, 11, 3, 1.3);
-	pyramid(63, 6, 5, 1.2);
-	pyramid(-22, 6, 3, 1.2);
+	pyramid(24, -13, 4, 1.15);
+	pyramid(30, 14, 3, 1.3);
+	pyramid(70, -15, 5, 1.2);
+	pyramid(-22, 12, 3, 1.2);
 	pyramid(16, -22, 3, 1.1);
-	for (let i = 0; i < 7; i++) crate(46 + (random() - 0.5) * 8, (random() - 0.5) * 12, 0.65, 1.2, YAW + random());
+	for (let i = 0; i < 7; i++) crate(50 + (random() - 0.5) * 8, -24 + (random() - 0.5) * 8, 0.65, 1.2, YAW + random());
 
 	// Oil drums
 	const drumItems = [];
@@ -594,14 +576,14 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 		it.color = ['#c2452a', '#2d5f70', '#d6a02e', '#39424a'][Math.floor(random() * 4)];
 		drumItems.push(it);
 	};
-	for (const [u, v] of [[14, 8], [14.7, 8.7], [15.4, 8], [14.7, 7.4], [-14, -9], [-13.3, -8.4], [40, 20], [40.7, 20.6], [40, 21.3], [30, -24], [30.7, -24.6]]) drum(u, v);
-	for (const [u, v] of [[14.7, 8]]) drum(u, v, 1.45);
+	for (const [u, v] of [[14, 11], [14.7, 11.7], [15.4, 11], [14.7, 10.4], [-14, -12], [-13.3, -11.4], [40, 20], [40.7, 20.6], [40, 21.3], [16, -24], [16.7, -24.6]]) drum(u, v);
+	for (const [u, v] of [[14.7, 11]]) drum(u, v, 1.45);
 
 	// Cones up the lane
 	const coneItems = [];
 	for (let i = 0; i < 16; i++) {
 		const v = i % 2 ? 4 : -4;
-		const a = place(-46 + i * 5.5 + 90, 0 + v + 26);
+		const a = place(-46 + i * 5.5, v - 40);
 		coneItems.push(dyn(a.x, 0.36, a.z, yawQ(0), R.ColliderDesc.cone(0.36, 0.2).setMass(4), { bounce: 0.3 }));
 	}
 
@@ -616,6 +598,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	for (const it of coneItems) kinds.set(it.body.handle, 'plate');
 
 	return {
+		surfaceAt,
 		update(dt = 0) {
 			windTime.value += dt;
 			for (const g of groupsOfLoose) g.update(false);

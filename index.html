@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Drivable car</title>
+<title>Realistic car</title>
 <link rel="icon" href="data:," />
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #d9c9a8; }
@@ -18,6 +18,17 @@
   #keys.asleep .first { display: inline; }
   #keys.asleep kbd { opacity: 0.6; }
   #credit { left: 12px; bottom: 9px; font-size: 10px; color: rgba(255, 255, 255, 0.82); }
+  #dash { right: 12px; bottom: 30px; display: flex; align-items: flex-end; gap: 10px; padding: 7px 10px; border-radius: 7px; background: rgba(20, 16, 10, 0.42); text-shadow: none; }
+  #speed { font-size: 24px; min-width: 40px; text-align: right; }
+  .unit { font-size: 10px; opacity: 0.75; margin-left: 3px; }
+  #gear { font-size: 24px; min-width: 16px; text-align: center; color: #ffd38a; }
+  #springs { display: grid; grid-template-columns: 7px 7px; gap: 2px; }
+  #springs span { display: block; width: 7px; height: 11px; background: rgba(255, 255, 255, 0.18); overflow: hidden; border-radius: 1px; }
+  #springs i { display: block; width: 100%; height: 100%; background: #fff; transform-origin: bottom; }
+  #side { display: flex; flex-direction: column; gap: 4px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; }
+  #surface { opacity: 0.85; min-width: 40px; }
+  #tc, #abs { opacity: 0.22; }
+  #tc.on, #abs.on { opacity: 1; color: #ffd38a; }
   #lost { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; background: #1c150a; color: #fff; font: 500 14px/1.5 ui-monospace, Consolas, monospace; }
   #lost[hidden] { display: none; }
   @media (max-width: 720px) { #credit { display: none; } }
@@ -26,15 +37,19 @@
 <body>
 <canvas id="view" tabindex="0"></canvas>
 <div id="cover"></div>
+<div id="dash" class="hud">
+  <div><span id="speed">0</span><span class="unit">km/h</span></div>
+  <div id="gear">1</div>
+  <div id="springs"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+  <div id="side"><span id="surface">tarmac</span><span><span id="tc">TC</span> <span id="abs">ABS</span></span></div>
+</div>
 <div id="keys" class="hud">
   <span class="first">Click to use the keys:</span>
   <kbd data-k="w">W</kbd><kbd data-k="a">A</kbd><kbd data-k="s">S</kbd><kbd data-k="d">D</kbd> drive<span class="gap"></span>
-  <kbd data-k="shift">Shift</kbd> boost<span class="gap"></span>
-  <kbd data-k="space">Space</kbd> jump<span class="gap"></span>
-  <kbd data-k="b">B</kbd> brake<span class="gap"></span>
+  <kbd data-k="space">Space</kbd> handbrake<span class="gap"></span>
   <kbd data-k="r">R</kbd> reset
 </div>
-<div id="credit" class="hud">Driving: folio-2025 by Bruno Simon (MIT), on Rapier (Apache-2.0)</div>
+<div id="credit" class="hud">Tyres: Godot Advanced Vehicle by Dechode. Gearbox and assists: Godot Easy Vehicle Physics by David Shoemaker. On Rapier.</div>
 <div id="lost" hidden>The graphics card stopped answering. Reload, or restart your browser.</div>
 <script type="module" src="./src/demo.js"></script>
 </body>

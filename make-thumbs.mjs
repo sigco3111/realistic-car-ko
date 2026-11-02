@@ -29,11 +29,9 @@ for (const [id] of cars) {
 	await page.evaluate((car) => {
 		const a = window.__block.app;
 		a.set('car', car);
-		a.view.radiusMin = 13.5;
-		a.view.radiusMax = 13.5;
-		a.view.phi = 1.12;
-		a.view.theta = -2.45;
-		a.view.reset = () => {};
+		a.view.yawOffset = Math.PI - 0.75;
+		a.view.pitch = 0.3;
+		a.view.zoom = 0.72;
 	}, id);
 	await page.waitForTimeout(500);
 	const png = path.join(out, `${id}.png`);
@@ -44,35 +42,30 @@ for (const [id] of cars) {
 	console.log(`${id}: ${fs.statSync(webp).size} bytes`);
 }
 
-// The cover: the rally car, a mannequin in the air over the bonnet.
+// The cover: the rally car thrown sideways on the gravel, on its springs, throwing dust.
 const cover = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 await cover.goto(url);
 await cover.waitForFunction(() => window.__block?.times?.ready, null, { timeout: 60000 });
 await cover.addStyleTag({ content: noHud });
 await cover.evaluate(() => {
 	const a = window.__block.app;
-	const f = a.figures[0];
-	a.view.radiusMin = 22;
-	a.view.radiusMax = 30;
-	a.view.zoom = 1;
-	a.view.zoomSmoothed = 1;
-	a.view.theta = Math.PI * 0.25 + 1.05;
-	a.view.phi = 1.02;
-	a.script = (car) => {
-		const dx = f.home.position.x - car.position.x;
-		const dz = f.home.position.z - car.position.z;
-		let d = Math.atan2(dx, dz) - Math.atan2(car.forward.x, car.forward.z);
-		if (d > Math.PI) d -= 2 * Math.PI;
-		if (d < -Math.PI) d += 2 * Math.PI;
-		return { throttle: 1, steer: f.falling ? 0 : Math.max(-1, Math.min(1, d * 4)), boost: 0, brake: 0, jump: 0 };
+	let t = 0;
+	a.view.pitch = 0.24;
+	a.view.zoom = 0.9;
+	a.script = (car, dt) => {
+		t += dt;
+		if (t < 2.2) return { throttle: 1, steer: 0, brake: 0, handbrake: 0 };
+		if (t < 2.8) return { throttle: 1, steer: -1, brake: 0, handbrake: 0 };
+		return { throttle: 1, steer: 1, brake: 0, handbrake: t < 3.5 ? 1 : 0 };
 	};
 });
-await cover.waitForFunction(() => window.__block.app.figures[0].falling, null, { timeout: 8000 });
+await cover.waitForTimeout(3100);
 await cover.evaluate(() => {
-	window.__block.app.values.slow = 0.9;
+	window.__block.app.values.slow = 0.8;
+	window.__block.app.view.yawOffset = 0.9;
 });
 for (let i = 0; i < 6; i++) {
-	await cover.waitForTimeout(300);
+	await cover.waitForTimeout(450);
 	await cover.screenshot({ path: path.join(shots, `cover-${i}.png`) });
 }
 await browser.close();

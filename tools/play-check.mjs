@@ -68,7 +68,7 @@ const read = () =>
 	frame.evaluate(() => {
 		const a = window.__block.app;
 		const c = a.car;
-		return { x: c.position.x, y: c.position.y, z: c.position.z, speed: c.speed, up: c.up.y, wheels: c.wheelsOnGround, flips: c.flips, falling: a.figures.filter((f) => f.falling).length, values: { ...a.values }, theta: a.view.theta, zoom: a.view.zoom, mass: c.mass, length: c.size.length, grip: c.tune.frictionSlip, engine: c.tune.engine, g: c.tune.gravity, renderer: a.renderer.info.programs.length };
+		return { x: c.position.x, y: c.position.y, z: c.position.z, speed: c.speed, up: c.up.y, wheels: c.wheelsOnGround, flips: c.flips, falling: a.figures.filter((f) => f.falling).length, values: { ...a.values }, yawOffset: a.view.yawOffset, zoom: a.view.zoom, mass: c.tune.mass, length: c.size.length,  renderer: a.renderer.info.programs.length };
 	});
 const wait = (ms) => page.waitForTimeout(ms);
 const shot = async (name) => {
@@ -90,31 +90,50 @@ check('first click moves nothing', Math.hypot(after.x - before.x, after.z - befo
 await page.keyboard.down('KeyW');
 await wait(1000);
 const going = await read();
-check('W drives', going.speed > 10, `${going.speed.toFixed(1)} m/s after 1 s`);
+check('W drives', going.speed > 6, `${going.speed.toFixed(1)} m/s after 1 s`);
 await page.keyboard.up('KeyW');
-await page.keyboard.down('KeyB');
-await wait(1000);
-await page.keyboard.up('KeyB');
+await page.keyboard.down('KeyS');
+await page.waitForFunction(() => true);
+await wait(900);
+const braked = await read();
+await page.keyboard.up('KeyS');
+check('S brakes it', braked.speed < 6, `${braked.speed.toFixed(1)} m/s`);
+await wait(500);
 const stopped = await read();
-check('B stops it', stopped.speed < 2, `${stopped.speed.toFixed(1)} m/s`);
 await page.keyboard.down('KeyA');
 await page.keyboard.down('KeyW');
 await wait(900);
 const turned = await read();
 await page.keyboard.up('KeyA');
 await page.keyboard.up('KeyW');
-check('A turns while driving', Math.hypot(turned.x - stopped.x, turned.z - stopped.z) > 3);
-await wait(1200);
+check('A turns while driving', Math.hypot(turned.x - stopped.x, turned.z - stopped.z) > 1.5);
+const letGo = await read();
+await wait(2500);
 const coasting = await read();
-check('letting go stops the car by itself', coasting.speed < 3, `${coasting.speed.toFixed(1)} m/s`);
-await page.keyboard.press('Space');
-await wait(320);
-const jumped = await read();
-check('Space jumps', jumped.y > 1 || jumped.wheels === 0, `y ${jumped.y.toFixed(2)}`);
-await wait(1200);
-const landed = await read();
-check('and comes down on its wheels', landed.wheels === 4 && landed.up > 0.95);
-await shot('after-jump');
+check('letting go, it slows by itself', coasting.speed < Math.max(1, letGo.speed * 0.8), `${letGo.speed.toFixed(1)} to ${coasting.speed.toFixed(1)} m/s`);
+await page.keyboard.down('KeyW');
+await wait(1500);
+await page.keyboard.down('Space');
+await page.keyboard.down('KeyA');
+await wait(600);
+const sliding = await frame.evaluate(() => {
+	const c = window.__block.app.car;
+	return { spin: c.wheels[2].spin, side: Math.abs(c.sideSpeed), speed: c.speed };
+});
+await page.keyboard.up('Space');
+await page.keyboard.up('KeyA');
+await page.keyboard.up('KeyW');
+check('Space locks the rear wheels and slides it', Math.abs(sliding.spin) < 1 && sliding.side > 0.8, `rear spin ${sliding.spin.toFixed(1)}, sideways ${sliding.side.toFixed(1)} m/s`);
+await shot('handbrake');
+await wait(2500);
+await page.keyboard.down('KeyS');
+await wait(1500);
+const backing = await frame.evaluate(() => {
+	const c = window.__block.app.car;
+	return { gear: c.gear, forward: c.forwardSpeed };
+});
+await page.keyboard.up('KeyS');
+check('S from a stop reverses', backing.gear === -1 && backing.forward < -1, `gear ${backing.gear}, ${backing.forward.toFixed(1)} m/s`);
 
 // Reset
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
@@ -165,7 +184,7 @@ await frame.evaluate(() => {
 	a.car.body.setTranslation({ x: 0, y: 2.5, z: 0 }, true);
 	a.car.body.setRotation({ x: 0, y: 0, z: 1, w: 0 }, true);
 });
-await wait(4200);
+await wait(5600);
 const righted = await read();
 check('on its roof, it rights itself', righted.up > 0.95 && righted.wheels === 4 && righted.flips >= 1, `hops ${righted.flips}, up ${righted.up.toFixed(2)}`);
 
@@ -182,7 +201,7 @@ for (const name of cars) {
 		a.script = (car, dt) => {
 			t += dt;
 			lowest = Math.min(lowest, car.up.y);
-			return { throttle: 1, steer: t > 1.2 ? 1 : 0, boost: 0, brake: 0, jump: 0 };
+			return { throttle: 1, steer: t > 1.2 ? 1 : 0, brake: 0, handbrake: 0 };
 		};
 		await new Promise((go) => setTimeout(go, 3400));
 		a.script = null;
@@ -201,7 +220,7 @@ await frame.evaluate(() => {
 		let d = Math.atan2(f.home.position.x - car.position.x, f.home.position.z - car.position.z) - Math.atan2(car.forward.x, car.forward.z);
 		if (d > Math.PI) d -= 2 * Math.PI;
 		if (d < -Math.PI) d += 2 * Math.PI;
-		return { throttle: 1, steer: f.falling ? 0 : Math.max(-1, Math.min(1, d * 4)), boost: 1, brake: 0, jump: 0 };
+		return { throttle: 1, steer: f.falling ? 0 : Math.max(-1, Math.min(1, d * 4)), brake: 0, handbrake: 0 };
 	};
 });
 await frame.waitForFunction(() => window.__block.app.figures[0].falling, null, { timeout: 6000 }).catch(() => {});
@@ -219,19 +238,19 @@ await page.mouse.up();
 await page.mouse.wheel(0, 500);
 await wait(100);
 const moved = await read();
-check('a drag turned the view and scroll zoomed', Math.abs(moved.theta - Math.PI * 0.25) > 0.1 && Math.abs(moved.zoom - 0.6) > 0.01, `theta ${moved.theta.toFixed(2)}, zoom ${moved.zoom.toFixed(2)}`);
-for (const [id, value] of [['car', 'pickup'], ['grip', 0.4], ['power', 1.8], ['slow', 0.5], ['gravity', 20]]) await page.evaluate(([i, v]) => window.tell({ type: 'set', id: i, value: v }), [id, value]);
+check('a drag turned the view and scroll zoomed', Math.abs(moved.yawOffset) > 0.1 && Math.abs(moved.zoom - 1) > 0.01, `yaw ${moved.yawOffset.toFixed(2)}, zoom ${moved.zoom.toFixed(2)}`);
+for (const [id, value] of [['car', 'pickup'], ['grip', 0.5], ['power', 1.8], ['slow', 0.5], ['assists', false], ['stiffness', 1.8]]) await page.evaluate(([i, v]) => window.tell({ type: 'set', id: i, value: v }), [id, value]);
 await wait(300);
 const kept = await read();
-check('changing car keeps the view', Math.abs(kept.theta - moved.theta) < 1e-6);
+check('changing car keeps the view', Math.abs(kept.yawOffset - moved.yawOffset) < 1e-6);
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
 await wait(1800);
 const final = await read();
 const state = await page.evaluate(() => window.got.state);
 check('Reset: every control back, and the page told', recipe.controls.every((c) => final.values[c.id] === c.default && state[c.id] === c.default), JSON.stringify(state));
-check('Reset: the view back', Math.abs(final.theta - Math.PI * 0.25) < 1e-6 && Math.abs(final.zoom - 0.6) < 1e-6);
+check('Reset: the view back', Math.abs(final.yawOffset) < 1e-6 && Math.abs(final.zoom - 1) < 1e-6);
 check('Reset: everyone on their feet', final.falling === 0);
-check('Reset: the car home, on its wheels', Math.hypot(final.x, final.z) < 0.5 && final.wheels === 4 && final.mass === 1150);
+check('Reset: the car home, on its wheels', Math.hypot(final.x, final.z) < 0.5 && final.wheels === 4 && final.mass === 1180);
 const crates = await frame.evaluate(() => {
 	const a = window.__block.app;
 	return a.world.bodies.len?.() ?? 0;

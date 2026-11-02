@@ -1,28 +1,25 @@
-// The car block's demo. WASD drives; the driving is src/car.js, the look of it src/car-model.js, the camera src/view.js.
-// The yard, the mannequins and the marks on the ground are src/yard.js, src/mannequin.js and src/effects.js.
-// Patch's block page steers it through Patch's block demo helper (lib/patch-block.js), with its controls in recipe.json.
-import { ACESFilmicToneMapping, BackSide, Color, DirectionalLight, Fog, HemisphereLight, Mesh, PCFShadowMap, PerspectiveCamera, PMREMGenerator, Scene, ShaderMaterial, SphereGeometry, WebGLRenderer } from 'three';
+// The car block's demo. WASD drives and Space is the handbrake. The physics is src/car.js, the look of it src/car-model.js,
+// the camera src/view.js; the yard, the mannequins and the marks on the ground are src/yard.js, src/mannequin.js and
+// src/effects.js. Patch's block page steers it through Patch's block demo helper (lib/patch-block.js), with its controls
+// in recipe.json.
+import { ACESFilmicToneMapping, BackSide, DirectionalLight, Fog, HemisphereLight, Mesh, PCFShadowMap, PerspectiveCamera, PMREMGenerator, Scene, ShaderMaterial, SphereGeometry, WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { patchBlock } from 'patch-block';
 import { block as recipeBlock } from '../recipe.json';
-import { Car, tuneFor } from './car.js';
+import { Car } from './car.js';
 import { CarModel, measureCar } from './car-model.js';
+import { CARS, specOf } from './cars.js';
 import { CarEffects } from './effects.js';
 import { Mannequin, prepareMannequin } from './mannequin.js';
 import { Sounds } from './sound.js';
-import { CarView } from './view.js';
+import { ChaseView } from './view.js';
 import { buildYard, COURSE_YAW, place, YARD } from './yard.js';
 
 const params = new URLSearchParams(location.search);
-const STEP = 1 / 60;
+const STEP = 1 / 120;
 const WORLD_GRAVITY = 9.81;
-const CARS = {
-	rally: { file: 'models/rally-car.glb', mass: 1150 },
-	muscle: { file: 'models/muscle-car.glb', mass: 1450 },
-	pickup: { file: 'models/pickup-truck.glb', mass: 2100 },
-};
-// Collision groups, as folio's: the bumper only touches loose things; bodies in a ragdoll don't touch each other.
+// Collision groups: the bumper only touches loose things, and the parts of a ragdoll don't touch each other.
 const SOLID = 1;
 const OBJECT = 2;
 const BUMPER = 4;
@@ -41,22 +38,21 @@ const times = { start: performance.now() };
 const canvas = document.getElementById('view');
 const cover = document.getElementById('cover');
 const defaults = Object.fromEntries(recipeBlock.controls.map((c) => [c.id, c.default]));
-if (params.get('g')) defaults.gravity = Number(params.get('g'));
 const values = { ...defaults };
 if (params.get('car')) values.car = params.get('car');
 
+let app = null;
+let paused = false;
+let last = performance.now();
+let accumulator = 0;
+let sounds = null;
 const block = patchBlock({
 	...recipeBlock,
 	onSet(id, value) {
-		if (!app || values[id] === value) return;
-		values[id] = value;
-		if (id === 'car') {
-			makeCar(value);
-			placeCar();
-		} else if (id !== 'slow') applyControls();
+		app?.set(id, value);
 	},
 	onTrigger(id) {
-		if (id === 'reset') reset();
+		if (id === 'reset') app?.reset();
 	},
 	onVisible(visible) {
 		paused = !visible;
@@ -67,7 +63,6 @@ const block = patchBlock({
 		}
 	},
 });
-let sounds = null;
 const breathe = () => new Promise((go) => setTimeout(go));
 block.progress?.(0.05, 'Loading the physics');
 const RAPIER = (await import('@dimforge/rapier3d-compat')).default;
@@ -94,14 +89,11 @@ canvas.addEventListener('webglcontextlost', (e) => {
 		// No storage: treat it as the first time.
 	}
 	if (Date.now() - then > 60000) location.reload();
-	else {
-		const note = document.getElementById('lost');
-		note.hidden = false;
-	}
+	else document.getElementById('lost').hidden = false;
 });
 const scene = new Scene();
-scene.fog = new Fog('#e7bd8d', 190, 560);
-const camera = new PerspectiveCamera(25, 1, 1, 1200);
+scene.fog = new Fog('#e7bd8d', 170, 620);
+const camera = new PerspectiveCamera(38, 1, 0.5, 1400);
 const pmrem = new PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.3;
@@ -110,17 +102,17 @@ scene.add(new HemisphereLight('#c6d8ea', '#8d6a42', 0.75));
 const sun = new DirectionalLight('#ffd3a0', 3.1);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-const SHADOW = 42;
-Object.assign(sun.shadow.camera, { left: -SHADOW, right: SHADOW, top: SHADOW, bottom: -SHADOW, near: 1, far: 260 });
+const SHADOW = 46;
+Object.assign(sun.shadow.camera, { left: -SHADOW, right: SHADOW, top: SHADOW, bottom: -SHADOW, near: 1, far: 280 });
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.05;
 scene.add(sun, sun.target);
 const SUN_FROM = { x: -70, y: 74, z: 44 };
 
-// The sky, for when the view goes low.
+// The sky.
 scene.add(
 	new Mesh(
-		new SphereGeometry(900, 24, 12),
+		new SphereGeometry(1200, 24, 12),
 		new ShaderMaterial({
 			side: BackSide,
 			depthWrite: false,
@@ -147,8 +139,9 @@ world.timestep = STEP;
 const events = new RAPIER.EventQueue(true);
 
 const loader = new GLTFLoader();
-const [muscleGltf, rallyGltf, pickupGltf, dummyGltf] = await Promise.all([CARS.muscle.file, CARS.rally.file, CARS.pickup.file, 'models/mannequin.glb'].map((f) => loader.loadAsync(f)));
-const loaded = { muscle: muscleGltf.scene, rally: rallyGltf.scene, pickup: pickupGltf.scene };
+const ids = Object.keys(CARS);
+const [dummyGltf, ...carGltfs] = await Promise.all(['models/mannequin.glb', ...ids.map((id) => CARS[id].file)].map((f) => loader.loadAsync(f)));
+const loaded = Object.fromEntries(ids.map((id, i) => [id, carGltfs[i].scene]));
 block.progress?.(0.5, 'Building the yard');
 await breathe();
 
@@ -161,29 +154,28 @@ addEventListener('keydown', startSound);
 
 const dummy = prepareMannequin(dummyGltf);
 const STANDING = [
-	[13, -1.6, 'idle', 2.8],
-	[17.5, 2.4, 'fold', 3.6],
-	[18.5, 1.3, 'talk', -1.2],
-	[24, -3.4, 'idle', 0.4],
-	[52, -8, 'talk', 1],
-	[52.8, -9, 'fold', 4],
-	[-15, -3, 'idle', 0.5],
-	[38, 16, 'fold', 2],
+	[16, -11, 'idle', 2.2],
+	[21, 11, 'fold', 3.6],
+	[22, 10, 'talk', -1.2],
+	[32, -13, 'idle', 0.4],
+	[52, -12, 'talk', 1],
+	[53, -13, 'fold', 4],
+	[-15, -11, 'idle', 0.5],
+	[38, 13, 'fold', 2],
 ];
 const figures = STANDING.map(([u, v, clip, yaw], i) => new Mannequin(RAPIER, world, dummy, { position: place(u, v), yaw: COURSE_YAW + yaw, clip, groups: { ragdoll: GROUPS.ragdoll, sensor: GROUPS.sensor }, phase: i * 0.37 }));
 for (const f of figures) scene.add(f.mesh);
 const figureBySensor = new Map(figures.map((f) => [f.sensor.handle, f]));
 
-const effects = new CarEffects(scene, renderer);
+const effects = new CarEffects(scene);
 
 // The cars: each model is prepared once, and only the physics are rebuilt when you change car.
-const START = { x: 0, y: 0.05, z: 0 };
-const INPUT = { throttle: 0, steer: 0, boost: 0, brake: 0, jump: 0 };
+const START = { x: 0, y: 0.06, z: 0 };
 const measured = {};
 const models = {};
-for (const id of Object.keys(CARS)) {
+for (const id of ids) {
 	measured[id] = measureCar(loaded[id]);
-	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, suspension: 0, spin: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 }, input: INPUT, tune: tuneFor({ length: measured[id].size.length, gravity: values.gravity }) };
+	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
 	models[id] = new CarModel(loaded[id], stand);
 	models[id].object.visible = false;
 	scene.add(models[id].object);
@@ -191,45 +183,46 @@ for (const id of Object.keys(CARS)) {
 let car = null;
 let model = null;
 let view = null;
-let hitStop = 0;
+const speedOf = (body) => {
+	const v = body?.linvel();
+	return v ? Math.hypot(v.x, v.y, v.z) : 0;
+};
+
 function makeCar(id) {
 	if (car) car.dispose();
 	if (model) model.object.visible = false;
-	const c = CARS[id];
 	const m = measured[id];
-	car = new Car(RAPIER, world, { wheels: m.wheels, size: m.size, mass: c.mass, gravity: values.gravity, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper } });
+	car = new Car(RAPIER, world, { ...specOf(id), wheels: m.wheels, size: m.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: yard.surfaceAt });
+	car.base = { ...car.tune, hertz: [...car.tune.hertz] };
 	car.on('stuck', () => car.flip());
 	car.on('land', (speed) => {
-		if (speed < 6) return;
-		effects.burst(car.position.x, 0.3, car.position.z, Math.min(14, Math.floor(speed)), 3 + speed * 0.3, 2);
-		view?.kick(Math.min(0.6, speed * 0.018));
-		sounds.play('heavy', Math.min(1, speed / 24), 0.62, 1 - values.slow * 0.75);
+		if (speed < 3) return;
+		effects.burst(car.position.x, 0.3, car.position.z, Math.min(14, Math.floor(speed * 1.5)), 2 + speed * 0.3, 1.6, yard.surfaceAt(car.position.x, car.position.z));
+		sounds.play('heavy', Math.min(1, speed / 9), 0.62, 1 - values.slow * 0.75);
 	});
 	applyControls();
 	model = models[id];
 	model.object.visible = true;
 	model.attach(car);
-	view?.fit(car.tune);
+	view?.fit(car);
 }
 
 function applyControls() {
-	const base = tuneFor({ length: car.size.length, gravity: values.gravity });
-	Object.assign(car.tune, base, {
-		frictionSlip: base.frictionSlip * values.grip,
-		engine: base.engine * values.power,
-		topSpeed: base.topSpeed * values.power,
-		topSpeedBoost: base.topSpeedBoost * values.power,
-		steering: values.steering,
-		boostMultiplier: values.boost,
-	});
+	const b = car.base;
+	car.tune.assists = values.assists;
+	car.tune.gripScale = values.grip;
+	car.tune.hertz = b.hertz.map((h) => h * values.stiffness);
+	car.tune.torque = b.torque * values.power;
+	car.tune.frontDrive = values.drive < 0 ? b.frontDrive : values.drive;
+	car.tune.lock = b.lock * values.lock;
 	car.flipWait = values.flip_wait;
 	car.applyTune();
 }
 
 function placeCar() {
 	car.moveTo(START, COURSE_YAW);
-	model.snap();
-	view.jump(START);
+	model.attach(car);
+	view.jump(car);
 	effects.reset();
 }
 
@@ -238,20 +231,18 @@ function reset() {
 	Object.assign(values, defaults);
 	if (wasCar !== values.car) makeCar(values.car);
 	else applyControls();
-	block.state({ ...recipeBlock.controls.reduce((all, c) => ({ ...all, [c.id]: values[c.id] }), {}) });
+	block.state({ ...values });
 	yard.reset();
 	for (const f of figures) f.reset();
 	events.clear();
-	hitStop = 0;
 	placeCar();
-	view.reset(START);
+	view.reset(car);
 	view.glideIn();
 }
 
 // Keys
 const held = new Set();
 const keyName = (e) => {
-	if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') return 'shift';
 	if (e.code === 'Space') return 'space';
 	if (e.code === 'ArrowUp') return 'w';
 	if (e.code === 'ArrowDown') return 's';
@@ -262,15 +253,13 @@ const keyName = (e) => {
 };
 const keysEl = document.getElementById('keys');
 const light = (k, on) => keysEl.querySelector(`[data-k="${k}"]`)?.classList.toggle('down', on);
-let jumpLeft = 0;
 addEventListener('keydown', (e) => {
 	const k = keyName(e);
 	if (!k || e.ctrlKey || e.metaKey || e.altKey) return;
-	if (['w', 'a', 's', 'd', 'shift', 'space', 'b', 'r'].includes(k)) e.preventDefault();
+	if (['w', 'a', 's', 'd', 'space', 'r'].includes(k)) e.preventDefault();
 	if (e.repeat) return;
 	held.add(k);
 	light(k, true);
-	if (k === 'space' && car?.wheelsOnGround > 0) jumpLeft = 0.18;
 	if (k === 'r' && app) reset();
 });
 addEventListener('keyup', (e) => {
@@ -323,29 +312,23 @@ addEventListener('resize', resize);
 resize();
 
 makeCar(values.car);
-view = new CarView(camera, car.tune);
-view.reset(START);
+view = new ChaseView(camera, car);
+view.reset(car);
 
-/** A figure's been reached: it lets go moving with whatever hit it, and is thrown up over the front. */
+/** A figure's been reached: it lets go, moving with whatever hit it and lifted a little by the bumper. The rest is contact. */
 function knock(figure, v, speed) {
 	if (figure.falling) return;
-	const carry = 0.9;
-	const lift = Math.min(12, 1 + speed * 0.3);
-	figure.fall({ x: v.x * carry, y: v.y * carry + lift, z: v.z * carry });
-	if (speed > 6) {
-		hitStop = Math.max(hitStop, 0.06);
-		view.kick(Math.min(0.5, speed * 0.02));
-		const spinOf = () => (Math.random() - 0.5) * Math.min(14, speed);
+	const lift = Math.min(7, 0.6 + speed * 0.2);
+	figure.fall({ x: v.x * 0.8, y: v.y * 0.8 + lift, z: v.z * 0.8 });
+	if (speed > 5) {
+		view.kick(Math.min(0.35, speed * 0.012));
+		const spinOf = () => (Math.random() - 0.5) * Math.min(10, speed);
 		figure.shove({ x: 0, y: 0, z: 0 }, { x: spinOf(), y: spinOf(), z: spinOf() });
 		const p = figure.mesh.position;
-		effects.burst(p.x, 0.3, p.z, 5, 3, 1.4);
+		effects.burst(p.x, 0.3, p.z, 4, 2, 1.1, yard.surfaceAt(p.x, p.z));
 	}
 }
 
-const speedOf = (body) => {
-	const v = body?.linvel();
-	return v ? Math.hypot(v.x, v.y, v.z) : 0;
-};
 function readEvents() {
 	const rate = 1 - values.slow * 0.75;
 	events.drainCollisionEvents((a, b, started) => {
@@ -359,7 +342,7 @@ function readEvents() {
 			const speed = speedOf(body);
 			if (body.handle === car.body.handle ? speed > 1.5 : speed > 3.5) {
 				knock(figure, body.linvel(), speed);
-				sounds.play('plate', Math.min(1, speed / 26), 0.7, rate);
+				sounds.play('plate', Math.min(1, speed / 22), 0.7, rate);
 			}
 			return;
 		}
@@ -368,36 +351,28 @@ function readEvents() {
 		const two = world.getCollider(b)?.parent();
 		const kind = yard.kindOf(one) ?? yard.kindOf(two);
 		if (!kind) return;
-		const speed = Math.abs(speedOf(one) - speedOf(two));
-		sounds.play(kind, speed / 18, kind === 'wood' ? 0.85 : 1, rate);
+		sounds.play(kind, Math.abs(speedOf(one) - speedOf(two)) / 16, kind === 'wood' ? 0.85 : 1, rate);
 	});
 	events.drainContactForceEvents((event) => {
-		const force = event.maxForceMagnitude() / car.mass;
+		const force = event.maxForceMagnitude() / car.tune.mass;
 		if (force < 30) return;
 		const strength = Math.min(1, force / 260);
 		sounds.play('heavy', strength, 0.8, rate);
-		view.kick(Math.min(0.5, strength * 0.6));
+		view.kick(Math.min(0.3, strength * 0.4));
 	});
 }
 
 // Each frame: fixed steps of the world, slow motion by making them smaller, and the picture between the last two.
-let accumulator = 0;
-let last = performance.now();
-let paused = false;
 function stepWorld() {
-	const stop = hitStop > 0 ? 0.15 : 1;
-	if (hitStop > 0) hitStop -= STEP;
-	const dt = STEP * (1 - values.slow) * stop;
+	const dt = STEP * (1 - values.slow);
 	world.timestep = dt;
-	if (jumpLeft > 0) jumpLeft -= dt;
 	car.input = app?.script
 		? app.script(car, dt)
 		: {
-				throttle: (held.has('w') ? 1 : 0) - (held.has('s') ? 1 : 0),
+				throttle: held.has('w') ? 1 : 0,
+				brake: held.has('s') ? 1 : 0,
 				steer: (held.has('a') ? 1 : 0) - (held.has('d') ? 1 : 0),
-				boost: held.has('shift') ? 1 : 0,
-				brake: held.has('b') ? 1 : 0,
-				jump: jumpLeft > 0 ? 1 : 0,
+				handbrake: held.has('space') ? 1 : 0,
 			};
 	car.update(dt);
 	world.step(events);
@@ -408,14 +383,38 @@ function stepWorld() {
 	return dt;
 }
 
-function draw(real, scaled, alpha) {
+// The readout: speed, gear, and how far each spring is through its travel.
+const readout = {
+	speed: document.getElementById('speed'),
+	gear: document.getElementById('gear'),
+	surface: document.getElementById('surface'),
+	bars: [...document.querySelectorAll('#springs i')],
+	tc: document.getElementById('tc'),
+	abs: document.getElementById('abs'),
+	next: 0,
+};
+function showReadout(now) {
+	if (now < readout.next) return;
+	readout.next = now + 80;
+	readout.speed.textContent = String(Math.round(Math.abs(car.forwardSpeed) * 3.6));
+	readout.gear.textContent = car.gear < 0 ? 'R' : String(car.gear);
+	readout.surface.textContent = car.wheels[2].surface;
+	car.wheels.forEach((w, i) => {
+		readout.bars[i].style.transform = `scaleY(${Math.max(0.03, Math.min(1, w.travelled)).toFixed(2)})`;
+	});
+	readout.tc.classList.toggle('on', values.assists && car.tractionCut > 0.08);
+	readout.abs.classList.toggle('on', values.assists && car.input.brake > 0 && car.wheels.some((w) => w.front && w.slipRatio < -0.13));
+}
+
+function draw(real, scaled, alpha, now) {
 	model.update(scaled, alpha);
 	for (const f of figures) f.update(scaled);
 	yard.update(scaled);
 	effects.update(car, scaled, camera);
-	view.update(model.object.position, real);
-	sun.target.position.set(view.smoothed.x, 0, view.smoothed.z);
-	sun.position.set(view.smoothed.x + SUN_FROM.x, SUN_FROM.y, view.smoothed.z + SUN_FROM.z);
+	view.update(car, model.object.position, real);
+	sun.target.position.set(model.object.position.x, 0, model.object.position.z);
+	sun.position.set(model.object.position.x + SUN_FROM.x, SUN_FROM.y, model.object.position.z + SUN_FROM.z);
+	showReadout(now);
 	renderer.render(scene, camera);
 }
 
@@ -442,15 +441,15 @@ function frame(now) {
 	accumulator += real;
 	let steps = 0;
 	let scaled = 0;
-	while (accumulator >= STEP && steps < 4) {
+	while (accumulator >= STEP && steps < 8) {
 		scaled += stepWorld();
 		accumulator -= STEP;
 		steps++;
 	}
-	if (steps === 4) accumulator = 0;
+	if (steps === 8) accumulator = 0;
 	frameCount++;
 	if (shadowEveryOther && frameCount % 2 === 0) renderer.shadowMap.needsUpdate = true;
-	draw(real, scaled, accumulator / STEP);
+	draw(real, scaled, accumulator / STEP, now);
 	// A card that can't keep up gets fewer pixels: nothing here compiles anything.
 	if (times.ready) {
 		// Only for a card that's truly stuck, for seconds on end: changing it reallocates the screen, itself a stall.
@@ -465,7 +464,7 @@ function frame(now) {
 	}
 }
 
-const app = {
+app = {
 	world,
 	view,
 	yard,
@@ -500,16 +499,16 @@ window.__block = { app, times, renderer, block };
 // Warm-up, all behind the cover: settle the world, send everything to the GPU, draw every car and every kind of thing once.
 block.progress?.(0.65, 'Settling the yard');
 await breathe();
-for (let i = 0; i < 60; i++) stepWorld();
+for (let i = 0; i < 120; i++) stepWorld();
 // A practice fall, so the first real one has nothing new to do.
 figures[0].fall({ x: 0, y: 1, z: 0 });
-for (let i = 0; i < 4; i++) stepWorld();
+for (let i = 0; i < 8; i++) stepWorld();
 figures[0].update(STEP);
 block.progress?.(0.75, 'Preparing the pictures');
 await breathe();
 const gl = renderer.getContext();
-for (const id of Object.keys(CARS)) models[id].object.visible = true;
-effects.burst(0, 0.5, 0, 4, 1, 1);
+for (const id of ids) models[id].object.visible = true;
+effects.burst(0, 0.5, 0, 4, 1, 1, 'gravel');
 effects.update(car, STEP, camera);
 scene.traverse((o) => {
 	const material = o.material;
@@ -519,22 +518,21 @@ scene.traverse((o) => {
 await renderer.compileAsync(scene, camera);
 block.progress?.(0.88, 'Preparing the pictures');
 await breathe();
-view.update({ x: 0, y: 0, z: 0 }, STEP);
 sun.target.position.set(0, 0, 0);
 sun.position.set(SUN_FROM.x, SUN_FROM.y, SUN_FROM.z);
 renderer.render(scene, camera);
 await breathe();
-for (const id of Object.keys(CARS)) models[id].object.visible = id === values.car;
+for (const id of ids) models[id].object.visible = id === values.car;
 figures[0].reset();
 yard.reset();
 effects.reset();
 events.clear();
 car.moveTo(START, COURSE_YAW);
-for (let i = 0; i < 60; i++) stepWorld();
+for (let i = 0; i < 180; i++) stepWorld();
 yard.reset();
-model.snap();
-view.reset(car.position);
-draw(STEP, STEP, 1);
+model.attach(car);
+view.reset(car);
+draw(STEP, STEP, 1, performance.now());
 // Wait until the GPU has really caught up.
 const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
 gl.flush();

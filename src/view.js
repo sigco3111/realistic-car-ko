@@ -1,50 +1,50 @@
-// The camera, from folio-2025's View.js (MIT, Bruno Simon): high up on a long lens, always looking the same way, easing
-// after the car and backing off as it gets faster. Most of why folio's car reads so well is that the world doesn't swing
-// around it. Sizes scale with the car. Drag turns it and scroll zooms, which it keeps.
+// The camera: behind the car, low enough to see it lean and pitch, swinging round a little late so a slide shows as the car
+// turning away from the way the camera's looking. Drag turns it and scroll zooms, which it keeps.
 import { MathUtils, Vector3 } from 'three';
 
-const smoothstep = MathUtils.smoothstep;
+const look = new Vector3();
+const wrap = (a) => {
+	while (a > Math.PI) a -= 2 * Math.PI;
+	while (a < -Math.PI) a += 2 * Math.PI;
+	return a;
+};
 
-export class CarView {
-	constructor(camera, tune) {
+export class ChaseView {
+	constructor(camera, car) {
 		this.camera = camera;
-		this.focus = new Vector3();
-		this.smoothed = new Vector3();
-		this.home = { phi: Math.PI * 0.27, theta: Math.PI * 0.25, zoom: 0.6 };
-		this.phi = this.home.phi;
-		this.theta = this.home.theta;
-		this.zoom = this.home.zoom;
-		this.zoomSmoothed = this.zoom;
+		this.at = new Vector3();
+		this.heading = 0;
+		this.yawOffset = 0;
+		this.pitch = 0.33;
+		this.zoom = 1;
+		this.pulled = 0;
 		this.roll = 0;
 		this.rollSpeed = 0;
 		this.glide = 0;
 		this.glideRate = 1;
-		this.fit(tune);
+		this.fit(car);
 	}
 
-	/** A knock of the view, as on a hard hit: folio's. */
+	fit(car) {
+		this.distance = 1.75 * car.size.length + 1.5;
+		this.lift = car.size.height * 0.55;
+	}
+
+	/** A knock of the view, on a hard hit. */
 	kick(strength = 1) {
 		this.rollSpeed = strength * (Math.random() < 0.5 ? -1 : 1);
 	}
 
-	fit(tune) {
-		this.radiusMin = 15 * tune.s;
-		this.radiusMax = 30 * tune.s;
-		this.edge0 = 10 * (tune.s / tune.tau);
-		this.edge1 = 80 * (tune.s / tune.tau);
-	}
-
-	/** Back to how it started, around a point. */
-	reset(at) {
-		this.phi = this.home.phi;
-		this.theta = this.home.theta;
-		this.zoom = this.home.zoom;
-		this.zoomSmoothed = this.zoom;
+	/** Back to how it started, behind the car. */
+	reset(car) {
+		this.yawOffset = 0;
+		this.pitch = 0.33;
+		this.zoom = 1;
+		this.pulled = 0;
 		this.roll = 0;
 		this.rollSpeed = 0;
-		this.focus.set(at.x, 0, at.z);
-		this.smoothed.copy(this.focus);
-		this.apply();
+		this.glide = 0;
+		this.jump(car);
 	}
 
 	/** Starts further back and glides in to where it should be: what Reset looks like, even when nothing else had moved. */
@@ -54,44 +54,52 @@ export class CarView {
 		this.apply();
 	}
 
-	/** Moves straight to a point, keeping the angle and zoom someone has chosen. */
-	jump(at) {
-		this.focus.set(at.x, 0, at.z);
-		this.smoothed.copy(this.focus);
+	/** Moves straight behind the car, keeping the angle and zoom someone has chosen. */
+	jump(car) {
+		this.heading = Math.atan2(car.forward.x, car.forward.z);
+		this.at.set(car.position.x, car.position.y, car.position.z);
 		this.apply();
 	}
 
 	drag(dx, dy) {
-		this.theta -= dx * 0.005;
-		this.phi = Math.min(Math.PI * 0.46, Math.max(Math.PI * 0.08, this.phi - dy * 0.004));
+		this.yawOffset -= dx * 0.005;
+		this.pitch = Math.min(1.35, Math.max(0.06, this.pitch + dy * 0.004));
 	}
 
 	scroll(by) {
-		this.zoom = Math.min(1, Math.max(0, this.zoom - by * 0.0006));
+		this.zoom = Math.min(3.5, Math.max(0.55, this.zoom * Math.exp(by * 0.0008)));
 	}
 
-	update(at, dt) {
-		this.focus.set(at.x, 0, at.z);
-		const beforeX = this.smoothed.x;
-		const beforeZ = this.smoothed.z;
-		const ease = Math.min(1, dt * 10);
-		this.smoothed.x += (this.focus.x - this.smoothed.x) * ease;
-		this.smoothed.z += (this.focus.z - this.smoothed.z) * ease;
-		const speed = dt > 0 ? Math.hypot(this.smoothed.x - beforeX, this.smoothed.z - beforeZ) / dt : 0;
-		const wanted = this.zoom - 0.4 * smoothstep(speed, this.edge0, this.edge1);
-		this.zoomSmoothed += (wanted - this.zoomSmoothed) * Math.min(1, dt * 10);
+	update(car, position, dt) {
+		const carHeading = Math.atan2(car.forward.x, car.forward.z);
+		// Going backwards it keeps facing the way the car points; going forwards it leans towards where the car's actually going.
+		const moving = Math.hypot(car.velocity.x, car.velocity.z);
+		let target = carHeading;
+		if (car.forwardSpeed > 3 && moving > 3) target = carHeading + wrap(Math.atan2(car.velocity.x, car.velocity.z) - carHeading) * 0.55;
+		if (car.upsideDown.active) target = this.heading;
+		this.heading = wrap(this.heading + wrap(target - this.heading) * Math.min(1, dt * 3.2));
+		const ease = Math.min(1, dt * 16);
+		this.at.x += (position.x - this.at.x) * ease;
+		this.at.y += (position.y - this.at.y) * Math.min(1, dt * 7);
+		this.at.z += (position.z - this.at.z) * ease;
+		// It drops back with speed, so a fast car still looks fast.
+		const wanted = MathUtils.smoothstep(moving, 8, 45) * 0.35;
+		this.pulled += (wanted - this.pulled) * Math.min(1, dt * 2.5);
 		this.rollSpeed += -this.roll * 100 * dt;
 		this.roll += this.rollSpeed * dt;
-		this.rollSpeed *= Math.max(0, 1 - 4 * dt);
+		this.rollSpeed *= Math.max(0, 1 - 5 * dt);
 		this.glide = Math.max(0, this.glide - dt * this.glideRate);
 		this.apply();
 	}
 
 	apply() {
-		const r = MathUtils.lerp(this.radiusMin, this.radiusMax, 1 - this.zoomSmoothed) * (1 + 0.45 * this.glide * this.glide * (3 - 2 * this.glide));
 		const c = this.camera;
-		c.position.setFromSphericalCoords(r, this.phi, this.theta).add(this.smoothed);
-		c.lookAt(this.smoothed);
+		const away = this.distance * this.zoom * (1 + this.pulled) * (1 + 0.45 * this.glide * this.glide * (3 - 2 * this.glide));
+		const yaw = this.heading + this.yawOffset;
+		const flat = Math.cos(this.pitch) * away;
+		c.position.set(this.at.x - Math.sin(yaw) * flat, Math.max(0.35, this.at.y + this.lift + Math.sin(this.pitch) * away), this.at.z - Math.cos(yaw) * flat);
+		look.set(this.at.x, this.at.y + this.lift, this.at.z);
+		c.lookAt(look);
 		c.rotation.z += this.roll;
 	}
 }

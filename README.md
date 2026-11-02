@@ -3,44 +3,51 @@ kind: system
 engine: three
 ---
 
-# Drivable car
+# Realistic car
 
-A raycast car on Rapier that's a joy to drive, at full size: instant steering, a big jump, boost, and it rights itself when it lands on its roof. Give it any model with separate wheels.
+A realistic car on Rapier at real scale and real gravity: tyres that build grip, peak and let go, suspension you can see working, an engine and gearbox, a handbrake that locks the rears, and tarmac, gravel and grass. Give it any model with separate wheels.
 
-The driving is [folio-2025](https://github.com/brunosimon/folio-2025)'s by **Bruno Simon** (MIT), ported and retuned from his 3 m toy to any length, with every number worked out from the car's size. In the live demo, drive our rally car, muscle car or pickup round a yard, over ramps, through crates and into mannequins, which go flying as Rapier ragdolls. WASD drives, Shift boosts, Space jumps, B brakes and R resets. Drag turns the view and scroll zooms.
+Rapier carries the body and answers the ray queries; everything a car does is worked out in `src/car.js` and applied as forces. The tyre follows **Dechode's** [Godot Advanced Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle), and the gearbox, suspension rates and assists follow [Godot Easy Vehicle Physics](https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics) by **David Shoemaker, Dechode and Baron Wittman**, all MIT. In the live demo, drive the rally car, muscle car or pickup round a yard with a road, a tarmac circle and loose gravel. WASD drives, Space is the handbrake, R resets. Drag turns the view and scroll zooms.
 
-Driving and camera: folio-2025 by Bruno Simon (MIT), on Rapier (Apache-2.0). Code here is MIT, art and sound are CC0.
+Code here is MIT, art and sound are CC0.
 
 ## Use it in a game
 
-Copy `src/car.js`, which only needs Rapier, plus `src/car-model.js` and `src/view.js` if you use three.js. Your model's front must face +Z with the ground at y = 0, and its wheels must be separate nodes.
+Copy `src/car.js`, which only needs Rapier, plus `src/car-model.js` and `src/view.js` if you use three.js. Your model's front must face +Z with the ground at y = 0, and its wheels must be separate nodes. **Step at 120 Hz.**
 
 ```js
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Car } from './car.js';
 import { CarModel, measureCar } from './car-model.js';
-import { CarView } from './view.js';
+import { ChaseView } from './view.js';
 
 await RAPIER.init();
 const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
-const STEP = 1 / 60;
+const STEP = 1 / 120;
 world.timestep = STEP;
 
 // Wheels called part_wheel_fl, fr, rl, rr, or say what yours are called.
 const names = { fl: 'WheelFL', fr: 'WheelFR', rl: 'WheelRL', rr: 'WheelRR' };
 const { wheels, size } = measureCar(gltf.scene, names);
-const car = new Car(RAPIER, world, { wheels, size, mass: 1150, gravity: 45, position: { x: 0, y: 0.1, z: 0 } });
+const car = new Car(RAPIER, world, {
+	wheels,
+	size,
+	mass: 1180,
+	torque: 400,
+	frontDrive: 0.38, // 0 is rear drive, 1 front drive
+	surfaceAt: (x, z, collider) => (onRoad(x, z) ? 'tarmac' : 'gravel'),
+	position: { x: 0, y: 0.1, z: 0 },
+});
 const look = new CarModel(gltf.scene, car, { names, steerNames: {} });
 scene.add(look.object);
-const view = new CarView(camera, car.tune);
-view.reset(car.position);
+const view = new ChaseView(camera, car);
+view.reset(car);
 
-car.on('upsideDown', () => {}); // also rightSideUp, flip, stuck, unstuck, land, takeoff
-car.on('stuck', () => car.flip()); // Or put it back somewhere: car.moveTo(place, yaw)
+car.on('stuck', () => car.flip()); // Also upsideDown, rightSideUp, flip, land, takeoff, shift
 
-// In your fixed step, 60 times a second:
+// In your fixed step, 120 times a second:
 function step() {
-	car.input = { throttle, steer, boost, brake, jump }; // throttle and steer from -1 to 1, the rest 0 or 1. Positive steer is left.
+	car.input = { throttle, brake, steer, handbrake }; // throttle and brake 0 to 1, steer -1 to 1 with left positive, handbrake 0 or 1
 	car.update(STEP);
 	world.step();
 	car.afterStep(STEP);
@@ -48,44 +55,42 @@ function step() {
 }
 // Each frame, with alpha how far you are between the last two steps:
 look.update(frameTime, alpha);
-view.update(look.object.position, frameTime);
+view.update(car, look.object.position, frameTime);
 ```
 
-Hold `jump` for about 0.18 s, not for as long as the key is down, or the car stands on stilts.
+To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `car.wheels`: `travelled` (0 at full droop, 1 fully compressed), `load` in newtons, `slip` (1 is the tyre's peak) and `surface`. `src/cars.js` has three complete cars to start a tune from, and `DEFAULTS` in `src/car.js` lists everything you can set.
 
-## Tuning it
+## What's in it
 
-`gravity` is the one choice that matters: it's what pulls on the chassis, in m/s². Every other number comes from it and the car's length (`tuneFor`), so the car stays balanced whatever you pick.
+- **Tyres:** a Pacejka curve set by its peak and its falloff (`slipCurve`). Grip against slip angle on tarmac: 0.64 at 2°, 1.05 at 7°, 0.91 at 37°. Longitudinal and lateral slip share one budget, so a locked wheel has no cornering left. Grip rises less than load does, so weight transfer changes the balance. Slip angle builds over a short rolling distance.
+- **Surfaces:** `SURFACES` holds tarmac, gravel and grass: gravel grips less, peaks later and lets go gently.
+- **Suspension:** springs and dampers worked out from the ride frequency and damping ratio you ask for, separate bump and rebound, anti-roll bars and bump stops.
+- **Drivetrain:** a torque curve, a clutch that slips pulling away, an automatic gearbox with a real gap in the drive while shifting, front/rear split and limited-slip differentials.
+- **Brakes:** front-biased, and each wheel can lock. The handbrake locks the rears and takes them off the engine.
+- **Assists, all switched by `tune.assists`:** ABS, traction control, steering that stops at the tyres' limit, and a little countersteer. They're for a keyboard.
+- **Rights itself:** on its roof or side it waits, then hops and turns over.
 
-| `gravity` | The 4.3 m rally car, 90° of full lock in (folio's 3 m car: 1.00 s) |
-|---|---|
-| 65 | 0.92 s. Moves even quicker than folio's. 56 is the exact match at this length |
-| 45 | 1.10 s, the demo's default: nearly folio's quickness and still a car |
-| 26 | 1.43 s: reads as a real heavy car |
-| 9.8 | Real gravity, slow and floaty beside the others |
+Measured on the rally car, 1,180 kg and 400 Nm, by `node tools/bench.mjs rally`:
 
-It only acts on the chassis, through its gravity scale, so crates and bodies keep your world's gravity. Change anything else in `car.tune`, then call `car.applyTune()`. `frictionSlip` is grip, `engine` and `topSpeed` are power, `steering` is full lock in radians.
-
-**What folio's feel is made of**, in case you retune it, all measured in `tools/bench.mjs`, which runs folio's own numbers beside ours on the same scripted keys:
-
-- Folio's world runs at double speed, so to the eye its gravity is about 4 g on a 3 m car. That's most of it.
-- Steering is instant, with the same full lock at every speed. There's no gearbox, and all four wheels drive.
-- Grip, engine and suspension are per kilogram. Mass only decides how far things fly when hit.
-- The camera is high up on a long lens, always facing the same way. It doesn't swing round behind the car.
-
-**Collisions:** to throw things rather than push them, pass `groups: { body, bumper }`. The bumper is a slightly bigger box that only touches loose objects, so they get hit before the body arrives. `src/demo.js` has the collision groups. The rays ignore anything dynamic and any sensor, so the car hits a crate rather than climbing it.
+| | Tarmac | Gravel |
+|---|---:|---:|
+| 0 to 100 km/h | 4.0 s | 5.5 s |
+| 100 to 0 km/h, ABS | 38.6 m, 0.99 g | 55.8 m, 0.70 g |
+| 100 to 0 km/h, no ABS | 42.2 m, 0.91 g | 59.2 m, 0.67 g |
+| Most grip, held at 70 km/h | 0.86 g | 0.62 g |
+| Body roll there | 4.8° | 3.5° |
+| Nose dive on the brakes | 3.6° | 2.5° |
 
 ## What it's bad at
 
-- **It isn't a simulation.** There's no gearbox, tyre model, differential or weight transfer to speak of, and all four wheels are the same.
-- **It doesn't really drift.** Past the grip limit it mostly runs wide, with about 5° of slide. Low grip slides more, but there's no handbrake turn or countersteer assist.
-- **High gravity lands hard.** The chassis falls faster than the world around it, which you may notice next to slower debris.
-- **Very fast.** With boost at the default it passes 60 m/s, so it needs a big world: the yard is 300 m across. Lower `power` or `topSpeedBoost` for small levels.
-- **On boost it rears up only until its tail touches**, about 9° on the rally car, because a real car's overhang is much longer than folio's. Folio's own car rears far more.
-- **Bumps.** It's only been driven on flat ground and smooth ramps. Rough terrain isn't tested.
-- **Wheels clip the arches** on the hardest landings, because the drawn wheel stops at the arch and the physics doesn't (`bump` and `droop` on `CarModel`).
-- **Rapier's version changes it.** This is tuned on 0.17.3, the version folio ships. On 0.21, folio's own car stays much flatter on boost, so re-check the feel if you upgrade.
-- **Fixed step.** Run it at 60 steps a second, smaller for slow motion. Its ride height allows for the step size, but its tune was only measured at 60.
+- **It's a game car, not an engineering model.** The numbers are chosen to behave well, not fitted to any real tyre or car. There's no camber, tyre temperature or wear, aerodynamic downforce or engine stall.
+- **The suspension is rays and forces.** Wheels have no mass of their own going up and down, so a wheel doesn't hop over rough ground.
+- **Rays, not tyre shapes.** A single ray under each wheel centre means sharp kerbs and steps hit late and hard. It's only been driven on flat ground and smooth ramps.
+- **No manual gears or clutch pedal.** The gearbox is automatic.
+- **It costs 14 tyre steps per physics step.** That's nothing for one car; hundreds would need a lighter model.
+- **The surface is looked up by you.** `surfaceAt` is called four times a step, so keep it cheap.
+- **Wheels clip the arches** on the hardest landings (`bump` and `droop` on `CarModel`).
+- **On a keyboard, steering is all or nothing.** The assists make up for that; with them off it's hard work, on purpose. A gamepad's analogue input isn't wired up in the demo.
 - **No engine or tyre sound yet.** The demo only has impacts.
 
 ## In this repo
@@ -93,10 +98,11 @@ It only acts on the chassis, through its gravity scale, so crates and bodies kee
 | | |
 |---|---|
 | `src/car.js` | The car: physics only, no three.js |
+| `src/cars.js` | Three cars' numbers |
 | `src/car-model.js` | Fits any model to a car and moves its wheels |
-| `src/view.js` | The camera |
+| `src/view.js` | The chase camera |
 | `src/mannequin.js` | A figure that stands until hit, then a ragdoll. One draw each |
-| `src/effects.js`, `src/sound.js`, `src/yard.js`, `src/demo.js` | The demo's marks, dust, trails, impacts and yard |
-| `tools/bench.mjs` | Folio's numbers beside ours: `node tools/bench.mjs` |
+| `src/effects.js`, `src/sound.js`, `src/yard.js`, `src/demo.js` | The demo's marks, dust, impacts and yard |
+| `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs rally --curve` |
 
 `npm install`, then `npm run dev` for the demo or `npm run build` for `dist/`. Every part's source and licence is in `LICENCE-NOTES.md` and `CREDITS.txt`.
