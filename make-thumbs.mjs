@@ -42,7 +42,7 @@ for (const [id] of cars) {
 	console.log(`${id}: ${fs.statSync(webp).size} bytes`);
 }
 
-// The cover: the rally car thrown sideways on the gravel, on its springs, throwing dust.
+// The cover: the Vireo thrown sideways on the gravel, on its springs, throwing dust.
 const cover = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 await cover.goto(url);
 await cover.waitForFunction(() => window.__block?.times?.ready, null, { timeout: 60000 });
@@ -62,7 +62,7 @@ await cover.evaluate(() => {
 await cover.waitForTimeout(3100);
 await cover.evaluate(() => {
 	window.__block.app.values.slow = 0.8;
-	window.__block.app.view.yawOffset = 0.9;
+	window.__block.app.view.yawOffset = 2.5;
 });
 for (let i = 0; i < 6; i++) {
 	await cover.waitForTimeout(450);

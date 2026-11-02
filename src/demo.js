@@ -163,7 +163,12 @@ const events = new RAPIER.EventQueue(true);
 
 const loader = new GLTFLoader();
 const ids = Object.keys(CARS);
-const [dummyGltf, ...carGltfs] = await Promise.all(['models/mannequin.glb', ...ids.map((id) => CARS[id].file)].map((f) => loader.loadAsync(f)));
+// A weak card gets a car's lighter model, where it has one. `?light` asks for it, for checks.
+const context = renderer.getContext();
+const cardInfo = context.getExtension('WEBGL_debug_renderer_info');
+const card = cardInfo ? context.getParameter(cardInfo.UNMASKED_RENDERER_WEBGL) : '';
+const weakCard = params.has('light') || /intel|swiftshader|llvmpipe|software|basic render|mali|adreno|powervr/i.test(card);
+const [dummyGltf, ...carGltfs] = await Promise.all(['models/mannequin.glb', ...ids.map((id) => (weakCard && CARS[id].light) || CARS[id].file)].map((f) => loader.loadAsync(f)));
 const loaded = Object.fromEntries(ids.map((id, i) => [id, carGltfs[i].scene]));
 block.progress?.(0.5, 'Building the yard');
 await breathe();

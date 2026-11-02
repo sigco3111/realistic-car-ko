@@ -270,7 +270,7 @@ const state = await page.evaluate(() => window.got.state);
 check('Reset: every control back, and the page told', recipe.controls.every((c) => final.values[c.id] === c.default && state[c.id] === c.default), JSON.stringify(state));
 check('Reset: the view back', Math.abs(final.yawOffset) < 1e-6 && Math.abs(final.zoom - 1) < 1e-6);
 check('Reset: everyone on their feet', final.falling === 0);
-check('Reset: the car home, on its wheels', Math.hypot(final.x, final.z) < 0.5 && final.wheels === 4 && final.mass === 1180);
+check('Reset: the car home, on its wheels', Math.hypot(final.x, final.z) < 0.5 && final.wheels === 4 && final.mass === 1100);
 const crates = await frame.evaluate(() => {
 	const a = window.__block.app;
 	return a.world.bodies.len?.() ?? 0;
@@ -281,7 +281,7 @@ await shot('after-reset');
 await page.mouse.click(640, 360);
 await page.keyboard.down('KeyW');
 for (let i = 0; i < 12; i++) {
-	await page.evaluate(([v]) => window.tell({ type: 'set', id: 'car', value: v }), [cars[i % 3]]);
+	await page.evaluate(([v]) => window.tell({ type: 'set', id: 'car', value: v }), [cars[i % cars.length]]);
 	await wait(60);
 }
 await page.keyboard.up('KeyW');

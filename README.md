@@ -58,7 +58,7 @@ look.update(frameTime, alpha);
 view.update(car, look.object.position, frameTime);
 ```
 
-To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `car.wheels`: `travelled` (0 at full droop, 1 fully compressed), `load` in newtons, `slip` (1 is the tyre's peak) and `surface`. `src/cars.js` has three complete cars to start a tune from, and `DEFAULTS` in `src/car.js` lists everything you can set.
+To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `car.wheels`: `travelled` (0 at full droop, 1 fully compressed), `load` in newtons, `slip` (1 is the tyre's peak) and `surface`. `src/cars.js` has four complete cars to start a tune from, and `DEFAULTS` in `src/car.js` lists everything you can set.
 
 ## What's in it
 
@@ -70,16 +70,16 @@ To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `c
 - **Assists, all switched by `tune.assists`:** ABS, traction control, steering that stops at the tyres' limit, and a little countersteer. They're for a keyboard.
 - **Rights itself:** on its roof or side it waits, then hops and turns over.
 
-Measured on the rally car, 1,180 kg and 400 Nm, by `node tools/bench.mjs rally`:
+Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
 
 | | Tarmac | Gravel |
 |---|---:|---:|
-| 0 to 100 km/h | 4.0 s | 5.5 s |
-| 100 to 0 km/h, ABS | 38.6 m, 0.99 g | 55.8 m, 0.70 g |
-| 100 to 0 km/h, no ABS | 42.2 m, 0.91 g | 59.2 m, 0.67 g |
-| Most grip, held at 70 km/h | 0.86 g | 0.62 g |
-| Body roll there | 4.8° | 3.5° |
-| Nose dive on the brakes | 3.6° | 2.5° |
+| 0 to 100 km/h | 3.7 s | 5.2 s |
+| 100 to 0 km/h, ABS | 37.9 m, 1.02 g | 56.1 m, 0.70 g |
+| 100 to 0 km/h, no ABS | 43.8 m, 0.90 g | 59.5 m, 0.67 g |
+| Most grip, held at 70 km/h | 0.86 g | 0.53 g |
+| Body roll there | 4.2° | 3.0° |
+| Nose dive on the brakes | 3.2° | 2.2° |
 
 ## What it's bad at
 
@@ -98,11 +98,12 @@ Measured on the rally car, 1,180 kg and 400 Nm, by `node tools/bench.mjs rally`:
 | | |
 |---|---|
 | `src/car.js` | The car: physics only, no three.js |
-| `src/cars.js` | Three cars' numbers |
+| `src/cars.js` | Four cars' numbers |
+| `src/dirt.js` | The Vireo's dirt: `value` from clean to a whole stage of gravel |
 | `src/car-model.js` | Fits any model to a car and moves its wheels |
 | `src/view.js` | The chase camera |
 | `src/mannequin.js` | A figure that stands until hit, then a ragdoll. One draw each |
 | `src/effects.js`, `src/sound.js`, `src/yard.js`, `src/demo.js` | The demo's marks, dust, impacts and yard |
-| `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs rally --curve` |
+| `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs vireo --curve` |
 
 `npm install`, then `npm run dev` for the demo or `npm run build` for `dist/`. Every part's source and licence is in `LICENCE-NOTES.md` and `CREDITS.txt`.

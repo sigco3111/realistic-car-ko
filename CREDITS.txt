@@ -24,7 +24,7 @@ The rendering
   https://github.com/mrdoob/three.js
 
 The cars
-  Patch: rally car, muscle car and pickup, CC0 1.0
+  Patch: Vireo rally, rally car, muscle car and pickup, CC0 1.0
 
 The mannequin
   Patch: the 1.8 m scale figure, CC0 1.0

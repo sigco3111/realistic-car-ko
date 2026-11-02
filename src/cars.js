@@ -1,38 +1,11 @@
-// The demo's three cars: real-ish numbers for what each is. Wheel positions and sizes are measured from the models, and
+// The demo's four cars, the default first: real-ish numbers for what each is. Wheel positions and sizes are measured from the models, and
 // held here too so tools/bench.mjs can run without loading them.
 export const CARS = {
-	rally: {
-		label: 'Rally car',
-		file: 'models/rally-car.glb',
-		size: { width: 1.94, height: 1.49, length: 4.31 },
-		wheels: [
-			{ key: 'fl', x: 0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
-			{ key: 'fr', x: -0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
-			{ key: 'rl', x: 0.78, y: 0.335, z: -1.25, radius: 0.335, front: false },
-			{ key: 'rr', x: -0.78, y: 0.335, z: -1.25, radius: 0.335, front: false },
-		],
-		tune: {
-			// Light, short and on long soft springs, with four-wheel drive sent rearwards: lively by what it is.
-			mass: 1180,
-			comHeight: 0.52,
-			frontWeight: 0.53,
-			travel: 0.28,
-			rest: 0.55,
-			hertz: [1.35, 1.3],
-			damping: [0.4, 0.4],
-			antiRoll: [0.24, 0.1],
-			torque: 400,
-			frontDrive: 0.38,
-			gears: [3.1, 2.15, 1.65, 1.3, 1.05],
-			finalDrive: 4.1,
-			brakeTorque: 4700,
-			handbrakeTorque: 3400,
-			lock: 0.62,
-		},
-	},
 	vireo: {
 		label: 'Vireo rally',
 		file: 'models/vireo-rally.glb',
+		// For a weak card: the same rig with 25,000 triangles instead of 66,000, and smaller pictures.
+		light: 'models/vireo-rally-lod.glb',
 		// The body itself: the model's bounds also count its mirrors and wing, which shouldn't hit anything.
 		size: { width: 1.9, height: 1.37, length: 4.02 },
 		bodySize: { width: 1.9, height: 1.37, length: 4.02 },
@@ -62,6 +35,35 @@ export const CARS = {
 			handbrakeTorque: 3300,
 			// The arches clear 0.6 rad; the inside wheel turns 6% more than this.
 			lock: 0.56,
+		},
+	},
+	rally: {
+		label: 'Rally car',
+		file: 'models/rally-car.glb',
+		size: { width: 1.94, height: 1.49, length: 4.31 },
+		wheels: [
+			{ key: 'fl', x: 0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
+			{ key: 'fr', x: -0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
+			{ key: 'rl', x: 0.78, y: 0.335, z: -1.25, radius: 0.335, front: false },
+			{ key: 'rr', x: -0.78, y: 0.335, z: -1.25, radius: 0.335, front: false },
+		],
+		tune: {
+			// Light, short and on long soft springs, with four-wheel drive sent rearwards: lively by what it is.
+			mass: 1180,
+			comHeight: 0.52,
+			frontWeight: 0.53,
+			travel: 0.28,
+			rest: 0.55,
+			hertz: [1.35, 1.3],
+			damping: [0.4, 0.4],
+			antiRoll: [0.24, 0.1],
+			torque: 400,
+			frontDrive: 0.38,
+			gears: [3.1, 2.15, 1.65, 1.3, 1.05],
+			finalDrive: 4.1,
+			brakeTorque: 4700,
+			handbrakeTorque: 3400,
+			lock: 0.62,
 		},
 	},
 	muscle: {

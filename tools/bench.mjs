@@ -1,4 +1,4 @@
-// What the car does, measured on scripted input, in real units: node tools/bench.mjs [rally|muscle|pickup] [--curve]
+// What the car does, measured on scripted input, in real units: node tools/bench.mjs [vireo|rally|muscle|pickup] [--curve]
 // Runs on a flat floor with no browser and no rendering. Compare with road-test numbers.
 import { Car, SURFACES, slipCurve } from '../src/car.js';
 import { CARS, specOf } from '../src/cars.js';
@@ -163,7 +163,7 @@ function measure(id, surface, tune) {
 	return out;
 }
 
-const id = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'rally';
+const id = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'vireo';
 if (process.argv.includes('--curve')) {
 	console.log('grip against slip angle, on each surface:');
 	for (const name of Object.keys(SURFACES)) {

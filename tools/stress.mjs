@@ -54,7 +54,7 @@ await page.evaluate(() => {
 });
 await page.mouse.click(800, 450);
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
-const cars = ['muscle', 'rally', 'pickup'];
+const cars = ['muscle', 'vireo', 'rally', 'pickup'];
 const set = (id, value) => page.evaluate(([i, v]) => window.__block.app.set(i, v), [id, value]);
 const started = Date.now();
 let round = 0;

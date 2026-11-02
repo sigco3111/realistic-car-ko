@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const images = !process.argv.includes('--no-images');
 export const cars = [
-	['rally', 'Rally car'],
 	['vireo', 'Vireo rally'],
+	['rally', 'Rally car'],
 	['muscle', 'Muscle car'],
 	['pickup', 'Pickup'],
 ];
@@ -23,10 +23,10 @@ const recipe = {
 			{
 				id: 'car',
 				label: 'Car',
-				hint: 'A light four-wheel-drive rally car, a heavy rear-drive muscle car, or a tall soft pickup. Same simulation, different numbers.',
+				hint: 'Two light four-wheel-drive rally cars, a heavy rear-drive muscle car, or a tall soft pickup. Same simulation, different numbers.',
 				type: 'choice',
 				options: cars.map(([value, label]) => ({ value, label, ...(images ? { image: `thumbs/cars/${value}.webp` } : {}) })),
-				default: 'rally',
+				default: 'vireo',
 				essential: true,
 			},
 			{ id: 'assists', label: 'Assists', hint: 'ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.', type: 'toggle', default: true, essential: true },
@@ -47,7 +47,7 @@ const recipe = {
 		{ files: 'assets/', license: 'MIT', source: 'https://github.com/brunosimon/folio-2025', author: 'Bruno Simon (folio-2025: righting the car)' },
 		{ files: 'assets/', license: 'Apache-2.0', source: 'https://github.com/dimforge/rapier.js', author: 'Dimforge (Rapier, the physics)' },
 		{ files: 'assets/', license: 'MIT', source: 'https://github.com/mrdoob/three.js', author: 'three.js authors' },
-		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the rally car, muscle car, pickup and mannequin)' },
+		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the Vireo, rally car, muscle car, pickup and mannequin)' },
 		{ files: 'audio/', license: 'CC0-1.0', source: 'https://kenney.nl/assets/impact-sounds', author: 'Kenney (Impact Sounds)' },
 		{ files: 'thumbs/', license: 'CC0-1.0', author: 'Patch (stills of this demo)' },
 	],
