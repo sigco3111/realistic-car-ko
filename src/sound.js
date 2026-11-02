@@ -11,40 +11,34 @@ export class Sounds {
 	constructor() {
 		this.context = null;
 		this.buffers = {};
-		this.bytes = {};
 		this.last = 0;
 		this.played = 0;
 	}
 
-	/** Fetches the files. Nothing can play until someone clicks or presses a key: browsers insist. */
+	/** Fetches and decodes the files, before the demo's ready, so a first click has nothing to wait for. */
 	async load() {
 		const names = Object.values(SETS).flat();
+		const offline = new OfflineAudioContext(2, 44100, 44100);
 		await Promise.all(
 			names.map(async (name) => {
 				const response = await fetch(`audio/${name}.ogg`);
-				this.bytes[name] = await response.arrayBuffer();
+				try {
+					this.buffers[name] = await offline.decodeAudioData(await response.arrayBuffer());
+				} catch {
+					// A browser that can't read Ogg just has no sound.
+				}
 			}),
 		);
 	}
 
-	/** On a person's first click or key. */
-	async start() {
+	/** On a person's first click or key: nothing can play until then, browsers insist. */
+	start() {
 		if (this.context) return;
 		const Context = window.AudioContext ?? window.webkitAudioContext;
 		if (!Context) return;
 		this.context = new Context();
 		this.output = this.context.createDynamicsCompressor();
 		this.output.connect(this.context.destination);
-		await Promise.all(
-			Object.entries(this.bytes).map(async ([name, bytes]) => {
-				try {
-					this.buffers[name] = await this.context.decodeAudioData(bytes);
-				} catch {
-					// A browser that can't read Ogg just has no sound.
-				}
-			}),
-		);
-		this.bytes = {};
 	}
 
 	/** `strength` from 0 to 1; `pitch` about 1; `rate` slows it with slow motion. */
