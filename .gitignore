@@ -1,0 +1,16 @@
+node_modules/
+dist/
+shots/
+.vite.log
+tools/out/
+tools/rapier17/
+tools/trace.mjs
+tools/flip-trace.mjs
+tools/folio-live.mjs
+tools/close.mjs
+tools/inspect-glb.mjs
+tools/ramp-shots.mjs
+tools/yard-shots.mjs
+tools/drive-shots.mjs
+tools/hit-shots.mjs
+tools/sheet.py

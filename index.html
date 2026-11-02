@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Drivable car</title>
+<link rel="icon" href="data:," />
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #d9c9a8; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  #cover { position: fixed; inset: 0; background: #d9c9a8; pointer-events: none; }
+  .hud { position: fixed; pointer-events: none; font: 500 11px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.02em; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+  #keys { right: 12px; bottom: 8px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  #keys kbd { font: inherit; min-width: 9px; padding: 1px 5px; text-align: center; border-radius: 4px; color: #fff; background: rgba(20, 16, 10, 0.5); border: 1px solid rgba(255, 255, 255, 0.28); text-shadow: none; }
+  #keys kbd.down { background: #fff; color: #1c150a; }
+  #keys .gap { width: 7px; }
+  #keys .first { display: none; font-weight: 600; margin-right: 6px; }
+  #keys.asleep .first { display: inline; }
+  #keys.asleep kbd { opacity: 0.6; }
+  #credit { left: 12px; bottom: 9px; font-size: 10px; color: rgba(255, 255, 255, 0.82); }
+  #lost { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; background: #1c150a; color: #fff; font: 500 14px/1.5 ui-monospace, Consolas, monospace; }
+  #lost[hidden] { display: none; }
+  @media (max-width: 720px) { #credit { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="view" tabindex="0"></canvas>
+<div id="cover"></div>
+<div id="keys" class="hud">
+  <span class="first">Click to use the keys:</span>
+  <kbd data-k="w">W</kbd><kbd data-k="a">A</kbd><kbd data-k="s">S</kbd><kbd data-k="d">D</kbd> drive<span class="gap"></span>
+  <kbd data-k="shift">Shift</kbd> boost<span class="gap"></span>
+  <kbd data-k="space">Space</kbd> jump<span class="gap"></span>
+  <kbd data-k="b">B</kbd> brake<span class="gap"></span>
+  <kbd data-k="r">R</kbd> reset
+</div>
+<div id="credit" class="hud">Driving: folio-2025 by Bruno Simon (MIT), on Rapier (Apache-2.0)</div>
+<div id="lost" hidden>The graphics card stopped answering. Reload, or restart your browser.</div>
+<script type="module" src="./src/demo.js"></script>
+</body>
+</html>

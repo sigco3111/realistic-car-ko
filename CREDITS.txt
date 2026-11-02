@@ -1,0 +1,30 @@
+Drivable car: who made what
+
+The driving and the camera
+  Bruno Simon, folio-2025, MIT License
+  https://github.com/brunosimon/folio-2025
+  Ported from sources/Game/Physics/PhysicsVehicle.js, sources/Game/Player.js and sources/Game/View.js, at commit 41046b5.
+  None of his art, sound or other code is here.
+
+The physics
+  Dimforge, Rapier 0.17.3, Apache-2.0
+  https://github.com/dimforge/rapier.js
+
+The rendering
+  three.js authors, three.js 0.186.1, MIT License
+  https://github.com/mrdoob/three.js
+
+The cars
+  Patch: muscle car, rally car and pickup, CC0 1.0
+
+The mannequin
+  Patch: the 1.8 m scale figure, CC0 1.0
+  Its clips are retargeted from Quaternius' Universal Animation Library 1 and 2, CC0 1.0
+  https://quaternius.com/packs/universalanimationlibrary.html
+
+The sounds
+  Kenney, Impact Sounds, CC0 1.0
+  https://kenney.nl/assets/impact-sounds
+
+The yard, its textures, the tyre marks, the dust and the pictures in thumbs/
+  Patch: made in code or stills of this demo, CC0 1.0
