@@ -9,6 +9,9 @@ const box = new Box3();
 const size = new Vector3();
 const centre = new Vector3();
 const target = new Quaternion();
+const turn = new Quaternion();
+const aim = new Vector3();
+const ALONG = new Vector3(0, 0, 1);
 
 /** The car's size and its wheels, in the model's own metres: what `new Car` asks for. */
 export function measureCar(model, names = DEFAULT_NAMES) {
@@ -77,12 +80,31 @@ function merged(root, keep) {
 	return out;
 }
 
+// A part's meshes, baked in the part's own frame or the model's, and held by a group at the part's origin.
+function holdPart(node, frame = 'model') {
+	const at = new Vector3().setFromMatrixPosition(node.matrixWorld);
+	const group = new Group();
+	group.position.copy(at);
+	const inner = new Group();
+	group.add(inner);
+	if (frame === 'model') inner.position.copy(at).negate();
+	return { group, inner, at };
+}
+
 /**
  * What the car looks like. `new CarModel(model, car)` takes the model as loaded (keeping its materials), then call
  * `view.update(dt, alpha)` once a frame after stepping, with alpha how far the frame is between the last two steps.
+ *
+ * It moves, when the model has them (fl, fr, rl, rr):
+ * - part_wheel_*: up and down with the suspension, and spinning.
+ * - part_steer_*: an upright that carries a wheel, up and down and steering, origin at the wheel's centre. It doesn't spin.
+ * - part_lca_* and part_uca_*: suspension arms, origin at the inboard pivot, turning about the car's long axis.
+ * - part_spring_*: origin at the top mount, local +Y towards the lower mount, aimed at an empty mount_spring_* on the
+ *   lower arm and stretched along Y.
+ * - part_steering_wheel: turning about whichever of its own axes runs most along the car.
  */
 export class CarModel {
-	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr' }, bump = 0.13, droop = 0.2 } = {}) {
+	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr', rl: 'part_steer_rl', rr: 'part_steer_rr' }, bump = 0.13, droop = 0.2 } = {}) {
 		this.car = car;
 		this.object = new Group();
 		this.object.name = 'car';
@@ -90,28 +112,88 @@ export class CarModel {
 		this.droop = droop;
 		model.updateMatrixWorld(true);
 		const moving = new Set([...Object.values(names), ...Object.values(steerNames)]);
-		for (const mesh of merged(model, (o) => moving.has(o.name))) this.object.add(mesh);
+		for (const key of Object.keys(names)) for (const part of ['part_lca_', 'part_uca_', 'part_spring_']) moving.add(part + key);
+		moving.add('part_steering_wheel');
 		const nodes = new Map();
 		for (const w of car.wheels) {
 			const wheel = model.getObjectByName(names[w.key]);
 			const steerNode = steerNames[w.key] ? model.getObjectByName(steerNames[w.key]) : null;
-			// The wheel turns about its own centre, whatever node it came from.
-			const spin = new Group();
 			const holder = new Group();
 			holder.position.set(w.x, w.y, w.z);
+			// The wheel spins about its own centre, whatever node it came from.
+			const spin = new Group();
 			holder.add(spin);
-			const baseInverse = new Matrix4().makeTranslation(-w.x, -w.y, -w.z);
 			const inner = new Group();
-			inner.applyMatrix4(baseInverse);
+			inner.position.set(-w.x, -w.y, -w.z);
 			spin.add(inner);
-			// Everything under the wheel, and whatever else the steering knuckle carries.
-			const source = steerNode ?? wheel;
-			for (const mesh of merged(source, () => false)) {
-				mesh.applyMatrix4(source.matrixWorld);
+			for (const mesh of merged(wheel, () => false)) {
+				mesh.applyMatrix4(wheel.matrixWorld);
 				inner.add(mesh);
 			}
+			// The upright doesn't spin.
+			if (steerNode) {
+				const still = new Group();
+				still.position.set(-w.x, -w.y, -w.z);
+				holder.add(still);
+				for (const mesh of merged(steerNode, (o) => o === wheel)) {
+					mesh.applyMatrix4(steerNode.matrixWorld);
+					still.add(mesh);
+				}
+			}
 			this.object.add(holder);
-			nodes.set(w.key, { holder, spin, y: 0 });
+			const node = { holder, spin, y: 0, arms: [], spring: null };
+
+			for (const name of [`part_lca_${w.key}`, `part_uca_${w.key}`]) {
+				const arm = model.getObjectByName(name);
+				if (!arm) continue;
+				const { group, inner: into, at } = holdPart(arm);
+				for (const mesh of merged(arm, () => false)) {
+					mesh.applyMatrix4(arm.matrixWorld);
+					mesh.castShadow = false;
+					into.add(mesh);
+				}
+				this.object.add(group);
+				const reach = w.x - at.x;
+				const entry = { group, at, reach };
+				node.arms.push(entry);
+				const mount = arm.getObjectByName(`mount_spring_${w.key}`);
+				if (mount) {
+					entry.mount = new Vector3().setFromMatrixPosition(mount.matrixWorld).sub(at);
+					node.lower = entry;
+				}
+			}
+			const springNode = model.getObjectByName(`part_spring_${w.key}`);
+			if (springNode && node.lower) {
+				const { group, inner: into, at } = holdPart(springNode, 'own');
+				for (const mesh of merged(springNode, () => false)) {
+					mesh.castShadow = false;
+					into.add(mesh);
+				}
+				this.object.add(group);
+				const rest = node.lower.mount.clone().add(node.lower.at).sub(at);
+				springNode.getWorldQuaternion(group.quaternion);
+				node.spring = { group, at, length: rest.length(), restDir: rest.clone().normalize(), restQ: group.quaternion.clone() };
+			}
+			nodes.set(w.key, node);
+		}
+		for (const mesh of merged(model, (o) => moving.has(o.name))) this.object.add(mesh);
+		const wheelNode = model.getObjectByName('part_steering_wheel');
+		if (wheelNode) {
+			const { group, inner: into } = holdPart(wheelNode, 'own');
+			for (const mesh of merged(wheelNode, () => false)) into.add(mesh);
+			wheelNode.getWorldQuaternion(group.quaternion);
+			this.object.add(group);
+			// Its column is whichever of its own axes runs most along the car. Turned so that left is anticlockwise to the driver.
+			let axis = null;
+			let best = 0;
+			for (const local of [new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 1)]) {
+				const along = local.clone().applyQuaternion(group.quaternion).z;
+				if (Math.abs(along) > best) {
+					best = Math.abs(along);
+					axis = local.multiplyScalar(-Math.sign(along));
+				}
+			}
+			this.steeringWheel = { group, restQ: group.quaternion.clone(), axis };
 		}
 		this.nodes = nodes;
 		this.prev = { position: car.position, quaternion: car.quaternion };
@@ -155,6 +237,20 @@ export class CarModel {
 			n.holder.position.y = w.y + n.y;
 			n.holder.rotation.y = w.front ? w.steerAngle : 0;
 			n.spin.rotation.x = w.angle;
+			for (const arm of n.arms) arm.group.rotation.z = arm.reach ? Math.atan(n.y / Math.abs(arm.reach)) * Math.sign(arm.reach) : 0;
+			if (n.spring) {
+				const low = n.lower;
+				// Where the lower mount has swung to, and the spring aimed at it from the top mount.
+				aim.copy(low.mount).applyAxisAngle(ALONG, low.group.rotation.z).add(low.at).sub(n.spring.at);
+				const length = aim.length();
+				turn.setFromUnitVectors(n.spring.restDir, aim.divideScalar(length));
+				n.spring.group.quaternion.copy(turn).multiply(n.spring.restQ);
+				n.spring.group.scale.y = length / n.spring.length;
+			}
+		}
+		if (this.steeringWheel) {
+			const front = car.wheels.find((w) => w.front);
+			this.steeringWheel.group.quaternion.copy(this.steeringWheel.restQ).multiply(turn.setFromAxisAngle(this.steeringWheel.axis, (front?.steerAngle ?? 0) * 5));
 		}
 	}
 }

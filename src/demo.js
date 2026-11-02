@@ -176,7 +176,7 @@ const models = {};
 for (const id of ids) {
 	measured[id] = measureCar(loaded[id]);
 	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
-	models[id] = new CarModel(loaded[id], stand);
+	models[id] = new CarModel(loaded[id], stand, CARS[id].travelDrawn ?? {});
 	models[id].object.visible = false;
 	scene.add(models[id].object);
 }
@@ -437,7 +437,7 @@ function frame(now) {
 	const gap = now - last;
 	const real = Math.min(0.1, gap / 1000);
 	last = now;
-	if (paused) return;
+	if (paused || app?.hold) return;
 	accumulator += real;
 	let steps = 0;
 	let scaled = 0;

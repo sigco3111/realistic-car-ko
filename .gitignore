@@ -15,3 +15,4 @@ tools/drive-shots.mjs
 tools/hit-shots.mjs
 tools/sheet.py
 tools/drive-film.mjs
+tools/fit-check.mjs
