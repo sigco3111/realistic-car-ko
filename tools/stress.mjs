@@ -14,7 +14,7 @@ const seconds = Number(process.argv[3] ?? 240);
 const out = process.argv[4] ?? 'tools/out/stress';
 fs.mkdirSync(out, { recursive: true });
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'car-stress-'));
-const context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: false, viewport: { width: 1600, height: 900 }, args: ['--mute-audio', '--ignore-gpu-blocklist'] });
+const context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: false, viewport: { width: 1600, height: 900 }, args: ['--mute-audio', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--ignore-gpu-blocklist'] });
 const page = context.pages()[0] ?? (await context.newPage());
 const errors = [];
 page.on('console', (m) => {
@@ -22,7 +22,10 @@ page.on('console', (m) => {
 });
 page.on('pageerror', (e) => errors.push(e.message.slice(0, 300)));
 await page.addInitScript(() => {
-	window.__stress = { gaps: [], long: 0, longest: 0, lost: 0 };
+	window.__stress = { gaps: [], long: 0, longest: 0, lost: 0, hidden: 0 };
+	document.addEventListener('visibilitychange', () => {
+		if (document.hidden) window.__stress.hidden++;
+	});
 	new PerformanceObserver((list) => {
 		for (const e of list.getEntries()) {
 			window.__stress.long++;
@@ -107,7 +110,7 @@ while (Date.now() - started < seconds * 1000) {
 const result = await page.evaluate(() => {
 	const g = window.__stress.gaps;
 	const sorted = [...g].sort((a, b) => a - b);
-	return { frames: g.length, over100: g.filter((x) => x > 100).length, over50: g.filter((x) => x > 50).length, worst: Math.round(sorted[sorted.length - 1] ?? 0), p99: Math.round(sorted[Math.floor(sorted.length * 0.99)] ?? 0), median: Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0), longTasks: window.__stress.long, longestTask: Math.round(window.__stress.longest), lost: window.__stress.lost, heapMB: Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1048576), programs: window.__block.renderer.info.programs.length, geometries: window.__block.renderer.info.memory.geometries, textures: window.__block.renderer.info.memory.textures };
+	return { hidden: window.__stress.hidden, frames: g.length, over100: g.filter((x) => x > 100).length, over50: g.filter((x) => x > 50).length, worst: Math.round(sorted[sorted.length - 1] ?? 0), p99: Math.round(sorted[Math.floor(sorted.length * 0.99)] ?? 0), median: Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0), longTasks: window.__stress.long, longestTask: Math.round(window.__stress.longest), lost: window.__stress.lost, heapMB: Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1048576), programs: window.__block.renderer.info.programs.length, geometries: window.__block.renderer.info.memory.geometries, textures: window.__block.renderer.info.memory.textures };
 });
 console.log(JSON.stringify({ rounds: round, bad, maxBodies, errors: errors.slice(0, 5), ...result }));
 await context.close();
