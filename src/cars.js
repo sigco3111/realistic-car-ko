@@ -30,6 +30,40 @@ export const CARS = {
 			lock: 0.62,
 		},
 	},
+	vireo: {
+		label: 'Vireo rally',
+		file: 'models/vireo-rally.glb',
+		// The body itself: the model's bounds also count its mirrors and wing, which shouldn't hit anything.
+		size: { width: 1.9, height: 1.37, length: 4.02 },
+		bodySize: { width: 1.9, height: 1.37, length: 4.02 },
+		travelDrawn: { bump: 0.13, droop: 0.13 },
+		wheels: [
+			{ key: 'fl', x: 0.785, y: 0.325, z: 1.26, radius: 0.325, front: true },
+			{ key: 'fr', x: -0.785, y: 0.325, z: 1.26, radius: 0.325, front: true },
+			{ key: 'rl', x: 0.795, y: 0.325, z: -1.26, radius: 0.325, front: false },
+			{ key: 'rr', x: -0.795, y: 0.325, z: -1.26, radius: 0.325, front: false },
+		],
+		tune: {
+			// A short, light Group B-style car with a lot of power and four-wheel drive sent rearwards.
+			mass: 1100,
+			comHeight: 0.5,
+			frontWeight: 0.47,
+			travel: 0.26,
+			rest: 0.5,
+			hertz: [1.4, 1.35],
+			damping: [0.4, 0.4],
+			antiRoll: [0.26, 0.1],
+			torque: 450,
+			frontDrive: 0.36,
+			gears: [3.1, 2.15, 1.65, 1.3, 1.05],
+			finalDrive: 4.1,
+			brakeTorque: 4500,
+			brakeFront: 0.58,
+			handbrakeTorque: 3300,
+			// The arches clear 0.6 rad; the inside wheel turns 6% more than this.
+			lock: 0.56,
+		},
+	},
 	muscle: {
 		label: 'Muscle car',
 		file: 'models/muscle-car.glb',

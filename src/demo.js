@@ -10,6 +10,7 @@ import { block as recipeBlock } from '../recipe.json';
 import { Car } from './car.js';
 import { CarModel, measureCar } from './car-model.js';
 import { CARS, specOf } from './cars.js';
+import { addDirt } from './dirt.js';
 import { CarEffects } from './effects.js';
 import { Mannequin, prepareMannequin } from './mannequin.js';
 import { Sounds } from './sound.js';
@@ -39,7 +40,7 @@ const canvas = document.getElementById('view');
 const cover = document.getElementById('cover');
 const defaults = Object.fromEntries(recipeBlock.controls.map((c) => [c.id, c.default]));
 const values = { ...defaults };
-if (params.get('car')) values.car = params.get('car');
+if (params.get('car')) defaults.car = values.car = params.get('car');
 
 let app = null;
 let paused = false;
@@ -173,7 +174,10 @@ const effects = new CarEffects(scene);
 const START = { x: 0, y: 0.06, z: 0 };
 const measured = {};
 const models = {};
+const dirt = {};
+const CLEAN = 0.12;
 for (const id of ids) {
+	dirt[id] = addDirt(loaded[id], { value: CLEAN });
 	measured[id] = measureCar(loaded[id]);
 	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
 	models[id] = new CarModel(loaded[id], stand, CARS[id].travelDrawn ?? {});
@@ -192,7 +196,7 @@ function makeCar(id) {
 	if (car) car.dispose();
 	if (model) model.object.visible = false;
 	const m = measured[id];
-	car = new Car(RAPIER, world, { ...specOf(id), wheels: m.wheels, size: m.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: yard.surfaceAt });
+	car = new Car(RAPIER, world, { ...specOf(id), wheels: m.wheels, size: CARS[id].bodySize ?? m.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: yard.surfaceAt });
 	car.base = { ...car.tune, hertz: [...car.tune.hertz] };
 	car.on('stuck', () => car.flip());
 	car.on('land', (speed) => {
@@ -236,6 +240,7 @@ function reset() {
 	for (const f of figures) f.reset();
 	events.clear();
 	placeCar();
+	for (const id of ids) dirt[id].value = CLEAN;
 	view.reset(car);
 	view.glideIn();
 }
@@ -379,6 +384,9 @@ function stepWorld() {
 	car.afterStep(dt);
 	readEvents();
 	model.stepped();
+	// Loose ground slowly dirties a car that shows it: a few hundred metres to go from washed to filthy.
+	const grime = dirt[values.car];
+	if (grime && car.wheels[2].inContact && car.wheels[2].surface !== 'tarmac') grime.value = Math.min(1, grime.value + (Math.abs(car.forwardSpeed) * dt) / 450);
 	if (car.position.y < -8 || Math.abs(car.position.x) > YARD + 30 || Math.abs(car.position.z) > YARD + 30) car.moveTo(START, COURSE_YAW);
 	return dt;
 }
@@ -470,6 +478,7 @@ app = {
 	yard,
 	figures,
 	effects,
+	dirt,
 	sounds,
 	camera,
 	scene,

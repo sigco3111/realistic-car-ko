@@ -1,7 +1,7 @@
 // Puts a model on a Car: finds its wheels and size, merges what doesn't move into a few draws, and each frame moves it to
 // where the physics says, wheels and steering too. Any glTF works if its wheels are separate nodes; say which is which
 // with `names` when they aren't called part_wheel_fl and so on. The model's front must face +Z, with the ground at y = 0.
-import { Box3, BufferGeometry, Group, Matrix4, Mesh, Quaternion, Vector3 } from 'three';
+import { Box3, BufferAttribute, BufferGeometry, Group, Matrix4, Mesh, Quaternion, Vector3 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const DEFAULT_NAMES = { fl: 'part_wheel_fl', fr: 'part_wheel_fr', rl: 'part_wheel_rl', rr: 'part_wheel_rr' };
@@ -35,6 +35,19 @@ export function measureCar(model, names = DEFAULT_NAMES) {
 	return { size: { width: size.x, height: all.max.y, length: size.z }, wheels };
 }
 
+// A copy with every attribute as plain floats: a model may store them packed, and packed values can neither take a matrix
+// without losing precision nor merge with other kinds.
+function plainFloats(geometry) {
+	const g = geometry.clone();
+	for (const [name, attribute] of Object.entries(g.attributes)) {
+		const { count, itemSize } = attribute;
+		const array = new Float32Array(count * itemSize);
+		for (let i = 0; i < count; i++) for (let c = 0; c < itemSize; c++) array[i * itemSize + c] = attribute.getComponent(i, c);
+		g.setAttribute(name, new BufferAttribute(array, itemSize));
+	}
+	return g;
+}
+
 // Every mesh under `root` with its matrix baked in, relative to root, joined per material. Drops attributes they don't all have.
 function merged(root, keep) {
 	root.updateMatrixWorld(true);
@@ -52,7 +65,7 @@ function merged(root, keep) {
 	const out = [];
 	for (const [material, meshes] of byMaterial) {
 		const geometries = meshes.map((m) => {
-			const g = m.geometry.clone();
+			const g = plainFloats(m.geometry);
 			const matrix = new Matrix4().multiplyMatrices(inverse, m.matrixWorld);
 			g.applyMatrix4(matrix);
 			if (matrix.determinant() < 0 && g.index) {
@@ -195,6 +208,14 @@ export class CarModel {
 			}
 			this.steeringWheel = { group, restQ: group.quaternion.clone(), axis };
 		}
+		// A material called brake_light glows when the brakes are on.
+		this.object.traverse((o) => {
+			if (o.isMesh && o.material.name === 'brake_light') this.brakeLight = o.material;
+		});
+		if (this.brakeLight) {
+			this.brakeLight.emissive.set('#ff1608');
+			this.brakeLight.emissiveIntensity = 0;
+		}
 		this.nodes = nodes;
 		this.prev = { position: car.position, quaternion: car.quaternion };
 		this.cur = { position: car.position, quaternion: car.quaternion };
@@ -247,6 +268,10 @@ export class CarModel {
 				n.spring.group.quaternion.copy(turn).multiply(n.spring.restQ);
 				n.spring.group.scale.y = length / n.spring.length;
 			}
+		}
+		if (this.brakeLight) {
+			const on = car.input?.brake > 0 && car.gear > 0 ? 3.5 : car.input?.throttle > 0 && car.gear < 0 ? 3.5 : 0;
+			this.brakeLight.emissiveIntensity += (on - this.brakeLight.emissiveIntensity) * Math.min(1, dt * 22);
 		}
 		if (this.steeringWheel) {
 			const front = car.wheels.find((w) => w.front);

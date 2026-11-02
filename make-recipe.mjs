@@ -11,6 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const images = !process.argv.includes('--no-images');
 export const cars = [
 	['rally', 'Rally car'],
+	['vireo', 'Vireo rally'],
 	['muscle', 'Muscle car'],
 	['pickup', 'Pickup'],
 ];
