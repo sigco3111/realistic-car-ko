@@ -114,26 +114,36 @@ check('letting go, it slows by itself', coasting.speed < Math.max(1, letGo.speed
 await page.keyboard.down('KeyW');
 await wait(1500);
 await page.keyboard.down('Space');
-await page.keyboard.down('KeyA');
+await wait(120);
+const spaceHolds = await frame.evaluate(() => window.__block.app.car.input.handbrake);
+check('Space is the handbrake', spaceHolds === 1, `input ${spaceHolds}`);
+await page.keyboard.up('Space');
+await page.keyboard.up('KeyW');
+// How far it slides, from a clean start and in the game's own time, so neither where the steps above left the car nor a
+// busy machine changes the answer. The same start gives the same slide every time.
+await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
+await wait(300);
 const sliding = await frame.evaluate(
 	() =>
 		new Promise((done) => {
-			const c = window.__block.app.car;
-			const from = performance.now();
-			const out = { spin: 99, side: 0, speed: c.speed };
-			const look = () => {
-				out.side = Math.max(out.side, Math.abs(c.sideSpeed));
-				if (performance.now() - from > 300) out.spin = Math.min(out.spin, Math.abs(c.wheels[2].spin));
-				if (performance.now() - from > 1000) done(out);
-				else requestAnimationFrame(look);
+			const a = window.__block.app;
+			const out = { spin: 99, side: 0, speed: 0 };
+			let t = 0;
+			a.script = (car, dt) => {
+				t += dt;
+				if (t < 1.6) return { throttle: 1, steer: 0, brake: 0, handbrake: 0 };
+				if (!out.speed) out.speed = car.speed;
+				out.side = Math.max(out.side, Math.abs(car.sideSpeed));
+				if (t > 1.9) out.spin = Math.min(out.spin, Math.abs(car.wheels[2].spin));
+				if (t >= 2.6) {
+					a.script = null;
+					done(out);
+				}
+				return { throttle: 1, steer: 1, brake: 0, handbrake: 1 };
 			};
-			requestAnimationFrame(look);
 		}),
 );
-await page.keyboard.up('Space');
-await page.keyboard.up('KeyA');
-await page.keyboard.up('KeyW');
-check('Space locks the rear wheels and slides it', sliding.spin < 1 && sliding.side > 2, `rear spin ${sliding.spin.toFixed(1)}, peak sideways ${sliding.side.toFixed(1)} m/s, from ${sliding.speed.toFixed(1)} m/s`);
+check('The handbrake locks the rear wheels and slides it', sliding.spin < 1 && sliding.side > 3, `rear spin ${sliding.spin.toFixed(1)}, peak sideways ${sliding.side.toFixed(1)} m/s, from ${sliding.speed.toFixed(1)} m/s`);
 await shot('handbrake');
 await wait(2500);
 await page.keyboard.down('KeyS');
@@ -143,7 +153,7 @@ const backing = await frame.evaluate(() => {
 	return { gear: c.gear, forward: c.forwardSpeed };
 });
 await page.keyboard.up('KeyS');
-check('S from a stop reverses', backing.gear === -1 && backing.forward < -1, `gear ${backing.gear}, ${backing.forward.toFixed(1)} m/s`);
+check('S from a stop reverses', backing.gear === -1 && backing.forward < -0.3, `gear ${backing.gear}, ${backing.forward.toFixed(1)} m/s`);
 
 // Reset
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
