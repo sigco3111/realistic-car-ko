@@ -421,9 +421,10 @@ export class Car {
 			const damp = speed > 0 ? t.bump : t.rebound;
 			let force = w.k * w.compression + w.c * damp * clamp(speed, -2.5, 2.5);
 			force += w.arb * (w.compression - w.opposite.compression);
-			// The bump stop: a much stiffer spring in the last of the travel, and it takes up whatever's left.
-			if (w.bottomed) force += w.k * 12 * w.bottomDepth + w.c * 2 * Math.max(0, speed);
-			force = Math.max(0, force);
+			// The bump stop: stiff going in, and it gives almost nothing back coming out, or a hard landing is a trampoline.
+			if (w.bottomed) force += speed > 0 ? w.k * 5 * w.bottomDepth + w.c * 2.5 * speed : w.k * 0.5 * w.bottomDepth;
+			// No corner takes more than this, however hard the landing: past it the body lands on its own bottom.
+			force = clamp(force, 0, w.sprung * 9.81 * 7);
 			if (dot(w.normal, this.up) < 0.2) continue;
 			w.load = force;
 			const impulse = force * dt;

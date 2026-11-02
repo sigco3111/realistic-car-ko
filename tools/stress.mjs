@@ -76,21 +76,20 @@ while (Date.now() - started < seconds * 1000) {
 	const until = Date.now() + 2500 + Math.random() * 2500;
 	await press('KeyW', true);
 	while (Date.now() < until) {
-		await press('ShiftLeft', Math.random() < 0.6);
+		await press('KeyS', Math.random() < 0.08);
 		await press('KeyA', Math.random() < 0.35);
 		await press('KeyD', Math.random() < 0.35);
-		await press('KeyB', Math.random() < 0.06);
-		if (Math.random() < 0.15) await page.keyboard.press('Space');
+		await press('Space', Math.random() < 0.25);
 		await page.waitForTimeout(160 + Math.random() * 260);
 	}
 	for (const k of [...held]) await press(k, false);
 	// Then fiddle.
 	const what = round % 6;
 	if (what === 0) await set('car', rand(cars));
-	if (what === 1) await set('grip', 0.2 + Math.random() * 1.8);
-	if (what === 2) await set('power', 0.3 + Math.random() * 1.7);
+	if (what === 1) await set('grip', 0.4 + Math.random() * 1.2);
+	if (what === 2) await set('assists', Math.random() < 0.5);
 	if (what === 3) await set('slow', Math.random() < 0.5 ? 0 : 0.8);
-	if (what === 4) await set('gravity', 10 + Math.random() * 55);
+	if (what === 4) await set('stiffness', 0.6 + Math.random() * 1.6);
 	if (what === 5) await page.keyboard.press('KeyR');
 	if (round % 4 === 0) await page.mouse.wheel(0, Math.random() < 0.5 ? 300 : -300);
 	const state = await page.evaluate(() => {
