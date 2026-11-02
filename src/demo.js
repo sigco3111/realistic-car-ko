@@ -438,12 +438,14 @@ function frame(now) {
 	draw(real, scaled, accumulator / STEP);
 	// A card that can't keep up gets fewer pixels: nothing here compiles anything.
 	if (times.ready) {
-		slowFrames = gap > 26 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
-		if (slowFrames > 60 && pixelRatio > 0.75) {
+		// Only for a card that's truly stuck: changing it reallocates the screen, itself a stall, so a busy moment mustn't.
+		slowFrames = gap > 30 ? slowFrames + 1 : Math.max(0, slowFrames - 3);
+		if (slowFrames > 150 && pixelRatio > 0.75) {
 			pixelRatio = Math.max(0.75, pixelRatio - 0.25);
 			renderer.setPixelRatio(pixelRatio);
 			resize();
 			slowFrames = 0;
+			times.scaledDown = (times.scaledDown ?? 0) + 1;
 		}
 	}
 }
