@@ -63,7 +63,7 @@
 			{
 				"id": "gravity",
 				"label": "Car gravity",
-				"hint": "What pulls on the car, m/s². Every other number on the car is worked out from this and its length: at 65 a 5 m car moves exactly as folio-2025's 3 m car does; at 9.8 it moves like a real one. Loose objects keep the world's gravity.",
+				"hint": "What pulls on the car; the rest follows from this and its length. 65 moves as the 3 m car in folio-2025 does; 9.8 like a real car.",
 				"type": "number",
 				"min": 9.8,
 				"max": 65,
@@ -93,7 +93,7 @@
 				"default": 2
 			},
 			{
-				"id": "flipWait",
+				"id": "flip_wait",
 				"label": "Seconds on its roof",
 				"hint": "How long it lies upside down before it rights itself.",
 				"type": "number",
