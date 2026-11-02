@@ -115,15 +115,25 @@ await page.keyboard.down('KeyW');
 await wait(1500);
 await page.keyboard.down('Space');
 await page.keyboard.down('KeyA');
-await wait(600);
-const sliding = await frame.evaluate(() => {
-	const c = window.__block.app.car;
-	return { spin: c.wheels[2].spin, side: Math.abs(c.sideSpeed), speed: c.speed };
-});
+const sliding = await frame.evaluate(
+	() =>
+		new Promise((done) => {
+			const c = window.__block.app.car;
+			const from = performance.now();
+			const out = { spin: 99, side: 0, speed: c.speed };
+			const look = () => {
+				out.side = Math.max(out.side, Math.abs(c.sideSpeed));
+				if (performance.now() - from > 300) out.spin = Math.min(out.spin, Math.abs(c.wheels[2].spin));
+				if (performance.now() - from > 1000) done(out);
+				else requestAnimationFrame(look);
+			};
+			requestAnimationFrame(look);
+		}),
+);
 await page.keyboard.up('Space');
 await page.keyboard.up('KeyA');
 await page.keyboard.up('KeyW');
-check('Space locks the rear wheels and slides it', Math.abs(sliding.spin) < 1 && sliding.side > 0.8, `rear spin ${sliding.spin.toFixed(1)}, sideways ${sliding.side.toFixed(1)} m/s`);
+check('Space locks the rear wheels and slides it', sliding.spin < 1 && sliding.side > 2, `rear spin ${sliding.spin.toFixed(1)}, peak sideways ${sliding.side.toFixed(1)} m/s, from ${sliding.speed.toFixed(1)} m/s`);
 await shot('handbrake');
 await wait(2500);
 await page.keyboard.down('KeyS');
