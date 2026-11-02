@@ -419,7 +419,20 @@ function draw(real, scaled, alpha) {
 	renderer.render(scene, camera);
 }
 
-let slowFrames = 0;
+// The lowest quality: a smaller shadow, drawn every other frame, and less grass.
+let shadowEveryOther = false;
+function lowest() {
+	sun.shadow.mapSize.set(1024, 1024);
+	sun.shadow.map?.dispose();
+	sun.shadow.map = null;
+	renderer.shadowMap.autoUpdate = false;
+	renderer.shadowMap.needsUpdate = true;
+	shadowEveryOther = true;
+	yard.lower();
+}
+
+let slowTime = 0;
+let frameCount = 0;
 function frame(now) {
 	requestAnimationFrame(frame);
 	const gap = now - last;
@@ -435,16 +448,18 @@ function frame(now) {
 		steps++;
 	}
 	if (steps === 4) accumulator = 0;
+	frameCount++;
+	if (shadowEveryOther && frameCount % 2 === 0) renderer.shadowMap.needsUpdate = true;
 	draw(real, scaled, accumulator / STEP);
 	// A card that can't keep up gets fewer pixels: nothing here compiles anything.
 	if (times.ready) {
-		// Only for a card that's truly stuck: changing it reallocates the screen, itself a stall, so a busy moment mustn't.
-		slowFrames = gap > 30 ? slowFrames + 1 : Math.max(0, slowFrames - 3);
-		if (slowFrames > 150 && pixelRatio > 0.75) {
+		// Only for a card that's truly stuck, for seconds on end: changing it reallocates the screen, itself a stall.
+		slowTime = gap > 30 ? slowTime + gap : Math.max(0, slowTime - gap * 3);
+		if (slowTime > 5000 && pixelRatio > 0.75) {
 			pixelRatio = Math.max(0.75, pixelRatio - 0.25);
 			renderer.setPixelRatio(pixelRatio);
 			resize();
-			slowFrames = 0;
+			slowTime = 0;
 			times.scaledDown = (times.scaledDown ?? 0) + 1;
 		}
 	}
@@ -543,29 +558,23 @@ cover.remove();
 // A card that can't keep up starts with less: fewer pixels, then a smaller shadow and less grass. Nothing here compiles.
 await new Promise((go) => {
 	let quick = 0;
-	let frames = 0;
 	let lowered = 0;
 	let then = performance.now();
 	const started = then;
+	let since = then;
 	const wait = (now) => {
 		const gap = now - then;
 		then = now;
-		frames++;
 		quick = gap < 26 ? quick + 1 : 0;
-		if (quick >= 20 || now - started > 5000) return go();
-		if (frames >= 45 && lowered < 2) {
-			frames = 0;
+		if (quick >= 20 || now - started > 5500) return go();
+		if (now - since > 1500 && lowered < 2) {
+			since = now;
 			lowered++;
 			times.lowered = lowered;
 			pixelRatio = 1;
 			renderer.setPixelRatio(pixelRatio);
 			resize();
-			if (lowered === 2) {
-				sun.shadow.mapSize.set(1024, 1024);
-				sun.shadow.map?.dispose();
-				sun.shadow.map = null;
-				yard.lower();
-			}
+			if (lowered === 2) lowest();
 		}
 		requestAnimationFrame(wait);
 	};
