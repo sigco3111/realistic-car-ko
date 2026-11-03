@@ -123,7 +123,7 @@ document.addEventListener('click', (e) => {{
   if (was === b) {{ now = was = null; return; }}
   now = new Audio(b.dataset.src); was = b; b.classList.add('on');
   now.onended = () => {{ b.classList.remove('on'); now = was = null; }};
-  now.play();
+  now.play().catch(() => {{}});
 }});
 </script></body></html>'''
 open(f'{folder}/sounds.html', 'w', encoding='utf-8').write(page)
