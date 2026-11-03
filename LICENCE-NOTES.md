@@ -8,7 +8,7 @@
 | A slip curve set by its falloff, tyre relaxation, wheel speeds in small steps, surfaces, the cars' numbers, `tools/bench.mjs` | Patch | MIT, © 2026 Patch | `src/car.js`, `src/cars.js`, `tools/` |
 | The physics | [Rapier](https://github.com/dimforge/rapier.js) 0.17.3 by Dimforge | Apache-2.0 | through npm, notice in `third-party/LICENSE-rapier.txt` |
 | three.js | the three.js authors | MIT | through npm |
-| Model fitting, camera, ragdoll, effects, sound player, yard, demo | Patch | MIT, © 2026 Patch | `src/` |
+| Model fitting, cameras, ragdoll, effects, sound player, yard, demo | Patch | MIT, © 2026 Patch | `src/` |
 | Vireo rally, full and light models | Patch's hero car from the lab, unchanged | CC0 | `public/models/` |
 | The Vireo's dirt | Patch, from the same model | MIT, © 2026 Patch | `src/dirt.js` |
 | Rally car, muscle car, pickup | Patch, from the lab's approved models, textures shrunk (`make-models.mjs`) | CC0 | `public/models/` |

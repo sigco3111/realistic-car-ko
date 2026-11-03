@@ -70,6 +70,19 @@ To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `c
 - **Assists, all switched by `tune.assists`:** ABS, traction control, steering that stops at the tyres' limit, and a little countersteer. They're for a keyboard.
 - **Rights itself:** on its roof or side it waits, then hops and turns over.
 
+## The driver's view
+
+V, or the View control, swaps between the chase camera and the driver's seat. `src/driver-view.js` is the seat: `new DriverView(camera)`, then `seat(model, eye)` and `update(car, null, dt)` once a frame, with a near plane of about 0.05 m.
+
+- **The head steadies itself.** The cabin stays fixed to the car, while 70% of its pitch and 55% of its roll reach the eye, so the horizon holds and the cabin leans round it.
+- **Acceleration moves it** up to 4 cm, smoothed, and it looks a little into corners and slides. The field of view goes from 62° to 67° with speed. Drag looks round, and lets go back to the road.
+- **What moves in a model:** the steering wheel on any car. With `cabin` numbers, the needles, pedals, handbrake and gear lever too (see `CarModel`). An empty called `eye_driver` is the eye; without one, say where with `eye` in `src/cars.js`.
+- **From the seat:** glass thins, dust stays out of the cabin, and trim lifts a little where `cabinGlow` says.
+
+The Vireo has all of it. The other three cars have only a steering wheel moving, in plainer cabins.
+
+## How it measures up
+
 Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
 
 | | Tarmac | Gravel |
@@ -102,6 +115,7 @@ Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
 | `src/dirt.js` | The Vireo's dirt: `value` from clean to a whole stage of gravel |
 | `src/car-model.js` | Fits any model to a car and moves its wheels |
 | `src/view.js` | The chase camera |
+| `src/driver-view.js` | The driver's view |
 | `src/mannequin.js` | A figure that stands until hit, then a ragdoll. One draw each |
 | `src/effects.js`, `src/sound.js`, `src/yard.js`, `src/demo.js` | The demo's marks, dust, impacts and yard |
 | `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs vireo --curve` |
