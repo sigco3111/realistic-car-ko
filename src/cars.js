@@ -10,9 +10,18 @@ export const CARS = {
 		size: { width: 1.9, height: 1.37, length: 4.02 },
 		bodySize: { width: 1.9, height: 1.37, length: 4.02 },
 		travelDrawn: { bump: 0.13, droop: 0.13 },
-		// Where the driver's eye sits, until the model says with an eye_driver.
-		eye: { x: 0.38, y: 1.1, z: -0.08 },
+		// The model has eye_driver, and these moving cabin parts.
 		wheelTurn: 8,
+		wheelAxis: { x: 0, y: 1, z: 0 },
+		cabin: {
+			rpm: { full: 9000, sweep: 4.712, sign: 1 },
+			speed: { full: 220, sweep: 4.712, sign: 1 },
+			throttle: -0.35,
+			brake: -0.35,
+			clutch: -0.35,
+			handbrake: -0.35,
+			gear: 0.25,
+		},
 		wheels: [
 			{ key: 'fl', x: 0.785, y: 0.325, z: 1.26, radius: 0.325, front: true },
 			{ key: 'fr', x: -0.785, y: 0.325, z: 1.26, radius: 0.325, front: true },
