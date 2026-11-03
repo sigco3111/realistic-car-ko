@@ -1,18 +1,18 @@
-// What the car does, measured on scripted input, in real units: node tools/bench.mjs [vireo|rally|muscle|pickup] [--curve]
+// What the car does, measured on scripted input, in real units: node tools/bench.mjs [--curve]
 // Runs on a flat floor with no browser and no rendering. Compare with road-test numbers.
 import { Car, SURFACES, slipCurve } from '../src/car.js';
-import { CARS, specOf } from '../src/cars.js';
+import { VIREO, specOf } from '../src/vireo.js';
 
 const mod = await import(new URL('../node_modules/@dimforge/rapier3d-compat/rapier.es.js', import.meta.url).href);
 const R = mod.default ?? mod;
 await R.init();
 const STEP = 1 / 120;
 
-function setup(id, surface, tune = {}) {
+function setup(surface, tune = {}) {
 	const world = new R.World({ x: 0, y: -9.81, z: 0 });
 	world.timestep = STEP;
 	world.createCollider(R.ColliderDesc.cuboid(4000, 1, 4000).setTranslation(0, -1, 0).setFriction(0.5));
-	const car = new Car(R, world, { ...specOf(id), ...tune, surfaceAt: () => surface, position: { x: 0, y: 0.1, z: 0 } });
+	const car = new Car(R, world, { ...specOf(), ...tune, surfaceAt: () => surface, position: { x: 0, y: 0.1, z: 0 } });
 	car.flipWait = 1e9;
 	return { world, car };
 }
@@ -35,15 +35,15 @@ const speedKmh = (c) => Math.hypot(c.velocity.x, c.velocity.z) * 3.6;
 const larger = (a, b) => (Math.abs(b) > Math.abs(a) ? b : a);
 const toSpeed = (s, kmh) => run(s, 30, { ...NONE, throttle: 1 }, () => speedKmh(s.car) < kmh);
 
-function measure(id, surface, tune) {
+function measure(surface, tune) {
 	const out = {};
-	let s = setup(id, surface, tune);
+	let s = setup(surface, tune);
 	run(s, 2.5, NONE);
 	out.restY = s.car.position.y;
 	out.restSpeed = s.car.speed;
 
 	// Launch.
-	s = setup(id, surface, tune);
+	s = setup(surface, tune);
 	run(s, 2, NONE);
 	let pitch = 0;
 	out.t100 = run(s, 25, { ...NONE, throttle: 1 }, () => {
@@ -56,7 +56,7 @@ function measure(id, surface, tune) {
 
 	// Brakes from 100, with ABS and without.
 	for (const assists of [true, false]) {
-		s = setup(id, surface, tune);
+		s = setup(surface, tune);
 		run(s, 1.5, NONE);
 		toSpeed(s, 100);
 		s.car.tune.assists = assists;
@@ -72,7 +72,7 @@ function measure(id, surface, tune) {
 	}
 
 	// Full lock at a held speed: how many g, and how far it leans.
-	s = setup(id, surface, tune);
+	s = setup(surface, tune);
 	run(s, 1.5, NONE);
 	toSpeed(s, 70);
 	let roll = 0;
@@ -92,7 +92,7 @@ function measure(id, surface, tune) {
 	out.steadyLoads = s.car.wheels.map((w) => Math.round(w.load));
 
 	// The same with no assists: full lock is full lock.
-	s = setup(id, surface, tune);
+	s = setup(surface, tune);
 	run(s, 1.5, NONE);
 	toSpeed(s, 70);
 	s.car.tune.assists = false;
@@ -104,7 +104,7 @@ function measure(id, surface, tune) {
 	out.rawUp = s.car.up.y;
 
 	// Step steer at 70 km/h: how quickly the car answers.
-	s = setup(id, surface, tune);
+	s = setup(surface, tune);
 	run(s, 1.5, NONE);
 	toSpeed(s, 70);
 	let t90 = null;
@@ -122,7 +122,7 @@ function measure(id, surface, tune) {
 	out.t90 = t90;
 
 	// Handbrake at 60 km/h with steer for 0.9 s, then let go: how far round it comes.
-	s = setup(id, surface, tune);
+	s = setup(surface, tune);
 	run(s, 1.5, NONE);
 	toSpeed(s, 60);
 	let slide = 0;
@@ -144,7 +144,7 @@ function measure(id, surface, tune) {
 	out.handbrakeEnd = speedKmh(s.car);
 
 	// A drop from half a metre: how far the springs go, and how quickly it settles.
-	s = setup(id, surface, tune);
+	s = setup(surface, tune);
 	run(s, 2, NONE);
 	const y0 = s.car.position.y;
 	s.car.body.setTranslation({ x: 0, y: y0 + 0.5, z: 0 }, true);
@@ -163,7 +163,6 @@ function measure(id, surface, tune) {
 	return out;
 }
 
-const id = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'vireo';
 if (process.argv.includes('--curve')) {
 	console.log('grip against slip angle, on each surface:');
 	for (const name of Object.keys(SURFACES)) {
@@ -173,8 +172,8 @@ if (process.argv.includes('--curve')) {
 	}
 }
 const f = (x, d = 1) => (x === null || x === undefined ? '-' : x.toFixed(d));
-const results = ['tarmac', 'gravel', 'grass'].map((surface) => [surface, measure(id, surface)]);
-console.log(`\n${CARS[id].label}, ${specOf(id).mass} kg, ${specOf(id).torque} Nm`);
+const results = ['tarmac', 'gravel', 'grass'].map((surface) => [surface, measure(surface)]);
+console.log(`\n${VIREO.label}, ${specOf().mass} kg, ${specOf().torque} Nm`);
 const rows = [
 	['rest: y, speed', (m) => `${f(m.restY, 3)}, ${f(m.restSpeed, 3)}`],
 	['0-100 km/h, s', (m) => f(m.t100)],

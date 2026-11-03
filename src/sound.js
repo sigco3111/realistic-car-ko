@@ -1,5 +1,5 @@
 // What the car sounds like: real recordings only, listed with their roles in audio/sounds.json (made by tools/make-sounds.py), so swapping one
-// is a line there. Each car's engine is a few loops cut from a recording at steady revs, faded from one to the next and pitched by the real rev
+// is a line there. The engine is a few loops cut from a recording at steady revs, faded from one to the next and pitched by the real rev
 // value. Tyres, gravel and wind are loops the car's speed and slip turn up and down. Everything else is a one-off, chosen by what was hit and how
 // hard, and never the same one twice running.
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -106,7 +106,7 @@ export class Sounds {
 		go(this.engineBus.gain.gain, this.inside ? CABIN.engineGain : 1);
 	}
 
-	/** Which engine's playing: each car says which set of loops is its own. */
+	/** Which engine's playing: which set of loops in audio/sounds.json. */
 	useEngine(name) {
 		this.wantedEngine = name;
 		if (!this.context || this.engine?.name === name) return;

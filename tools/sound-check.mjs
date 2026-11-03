@@ -1,4 +1,4 @@
-// Measures the mix as the game makes it, since nobody here can hear it: taps the sound just before the speakers while a script drives each
+// Measures the mix as the game makes it, since nobody here can hear it: taps the sound just before the speakers while a script drives the
 // car, and prints how loud it is, its peak, and which sounds were asked for. Automated browsers are muted, so this reads the numbers, not the air.
 //   node tools/sound-check.mjs <demo url>
 import { chromium } from 'playwright';
@@ -61,27 +61,16 @@ const phase = async (name, script, ms) => {
 	console.log(`${name.padEnd(30)} level ${String(r.sound.rms).padStart(6)} dB  peak ${String(r.sound.peak).padStart(6)} dB  ${String(r.rpm).padStart(5)} rpm  ${String(r.kmh).padStart(3)} km/h  ${r.surface.padEnd(6)} ${JSON.stringify(r.sound.kinds)}`);
 };
 const go = (t, b = 0, s = 0, h = 0) => `return { throttle: ${t}, brake: ${b}, steer: ${s}, handbrake: ${h} };`;
-for (const car of ['vireo', 'rally', 'muscle', 'pickup']) {
-	console.log(`-- ${car}`);
-	await page.evaluate((v) => {
-		const a = window.__block.app;
-		a.script = () => ({ throttle: 0, brake: 0, steer: 0, handbrake: 0 });
-		a.set('car', v);
-		a.reset?.();
-		a.set('car', v);
-	}, car);
-	await page.waitForTimeout(600);
-	await phase('idle', go(0), 1500);
-	await phase('full throttle', go(1), 4000);
-	await phase('lift off', go(0), 1500);
-	await phase('full throttle again', go(1), 2000);
-	await phase('handbrake and lock', go(0.5, 0, 1, 1), 1500);
-	await phase('brake hard', go(0, 1), 1500);
-}
+await page.waitForTimeout(600);
+await phase('idle', go(0), 1500);
+await phase('full throttle', go(1), 4000);
+await phase('lift off', go(0), 1500);
+await phase('full throttle again', go(1), 2000);
+await phase('handbrake and lock', go(0.5, 0, 1, 1), 1500);
+await phase('brake hard', go(0, 1), 1500);
 console.log('-- impacts, full speed into the ground from above');
 await page.evaluate(() => {
 	const a = window.__block.app;
-	a.set('car', 'vireo');
 	a.script = () => ({ throttle: 0, brake: 0, steer: 0, handbrake: 0 });
 	a.car.body.setTranslation({ x: a.car.position.x, y: a.car.position.y + 4, z: a.car.position.z }, true);
 });

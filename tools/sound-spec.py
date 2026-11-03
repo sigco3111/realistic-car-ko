@@ -17,29 +17,6 @@ ENGINES = {
             {'id': '183654', 'sweep': (10, 25), 'long': 2.2, 'hz': 56, 'rpm': 6720},
         ],
     },
-    # A V8: a Cadillac's idle, an Audi pulling up through its middle revs.
-    'muscle': {
-        'level': -24,
-        'offTone': 1200,
-        'offGain': 0.55,
-        'loops': [
-            {'id': '873856', 'at': 28, 'long': 3, 'hz': 25, 'rpm': 750, 'gain': 0.42},
-            {'id': '339703', 'sweep': (1.5, 12.8), 'long': 1.6, 'hz': 59, 'rpm': 3540},
-            {'id': '339703', 'sweep': (1.5, 12.8), 'long': 1.6, 'hz': 66, 'rpm': 3960},
-            {'id': '339703', 'sweep': (1.5, 12.8), 'long': 1.6, 'hz': 73, 'rpm': 4380},
-            {'id': '339703', 'sweep': (1.5, 12.8), 'long': 1.6, 'hz': 79, 'rpm': 4740},
-        ],
-    },
-    # A Ford Ranger, held at steady revs.
-    'pickup': {
-        'level': -25,
-        'offTone': 1200,
-        'offGain': 0.6,
-        'loops': [
-            {'id': '779214', 'at': 45, 'long': 3, 'hz': 29, 'rpm': 870, 'gain': 0.8},
-            {'id': '779214', 'at': 110, 'long': 3, 'hz': 67, 'rpm': 2010},
-        ],
-    },
 }
 
 # Loops. `at` None takes the steadiest loud stretch.

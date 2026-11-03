@@ -180,21 +180,13 @@ for (const c of recipe.controls) {
 	}
 }
 
-// The car choice, every way round.
-const cars = recipe.controls.find((c) => c.id === 'car').options.map((o) => o.value);
+// Going between the maps and the views compiles nothing new.
 const programs0 = (await read()).renderer;
-for (const a of cars)
-	for (const b of cars) {
-		if (a === b) continue;
-		await page.evaluate((v) => window.tell({ type: 'set', id: 'car', value: v }), a);
-		await wait(120);
-		await page.evaluate((v) => window.tell({ type: 'set', id: 'car', value: v }), b);
-		await wait(250);
-		const r = await read();
-		const home = Math.hypot(r.x, r.z) < 0.5 && r.wheels === 4 && r.up > 0.99;
-		check(`${a} to ${b}`, r.values.car === b && home, `length ${r.length.toFixed(2)}, y ${r.y.toFixed(3)}`);
-	}
-check('switching cars compiles nothing new', (await read()).renderer === programs0, `${programs0} programs`);
+for (const [id, value] of [['map', 'yard'], ['view', 'driver'], ['map', 'stage'], ['view', 'chase']]) {
+	await page.evaluate(([i, v]) => window.tell({ type: 'set', id: i, value: v }), [id, value]);
+	await wait(250);
+}
+check('switching map and view compiles nothing new', (await read()).renderer === programs0, `${programs0} programs`);
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
 await wait(300);
 
@@ -208,27 +200,24 @@ await wait(5600);
 const righted = await read();
 check('on its roof, it rights itself', righted.up > 0.95 && righted.wheels === 4 && righted.flips >= 1, `hops ${righted.flips}, up ${righted.up.toFixed(2)}`);
 
-// Hard turns with the most grip, each car: does it stay on its wheels? Reported, since it rights itself if it doesn't.
-for (const name of cars) {
-	await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
-	await wait(100);
-	await page.evaluate((v) => window.tell({ type: 'set', id: 'car', value: v }), name);
-	await page.evaluate(() => window.tell({ type: 'set', id: 'grip', value: 2 }));
-	const low = await frame.evaluate(async () => {
-		const a = window.__block.app;
-		let lowest = 1;
-		let t = 0;
-		a.script = (car, dt) => {
-			t += dt;
-			lowest = Math.min(lowest, car.up.y);
-			return { throttle: 1, steer: t > 1.2 ? 1 : 0, brake: 0, handbrake: 0 };
-		};
-		await new Promise((go) => setTimeout(go, 3400));
-		a.script = null;
-		return lowest;
-	});
-	check(`${name}: full lock at speed with the most grip stays on its wheels`, low > 0.5, `lowest up ${low.toFixed(2)}`);
-}
+// Hard turns with the most grip: does it stay on its wheels? Reported, since it rights itself if it doesn't.
+await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
+await wait(100);
+await page.evaluate(() => window.tell({ type: 'set', id: 'grip', value: 2 }));
+const low = await frame.evaluate(async () => {
+	const a = window.__block.app;
+	let lowest = 1;
+	let t = 0;
+	a.script = (car, dt) => {
+		t += dt;
+		lowest = Math.min(lowest, car.up.y);
+		return { throttle: 1, steer: t > 1.2 ? 1 : 0, brake: 0, handbrake: 0 };
+	};
+	await new Promise((go) => setTimeout(go, 3400));
+	a.script = null;
+	return lowest;
+});
+check('full lock at speed with the most grip stays on its wheels', low > 0.5, `lowest up ${low.toFixed(2)}`);
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
 await wait(300);
 
@@ -259,10 +248,10 @@ await page.mouse.wheel(0, 500);
 await wait(100);
 const moved = await read();
 check('a drag turned the view and scroll zoomed', Math.abs(moved.yawOffset) > 0.1 && Math.abs(moved.zoom - 1) > 0.01, `yaw ${moved.yawOffset.toFixed(2)}, zoom ${moved.zoom.toFixed(2)}`);
-for (const [id, value] of [['car', 'pickup'], ['grip', 0.5], ['power', 1.8], ['slow', 0.5], ['assists', false], ['stiffness', 1.8]]) await page.evaluate(([i, v]) => window.tell({ type: 'set', id: i, value: v }), [id, value]);
+for (const [id, value] of [['grip', 0.5], ['power', 1.8], ['slow', 0.5], ['assists', false], ['stiffness', 1.8]]) await page.evaluate(([i, v]) => window.tell({ type: 'set', id: i, value: v }), [id, value]);
 await wait(300);
 const kept = await read();
-check('changing car keeps the view', Math.abs(kept.yawOffset - moved.yawOffset) < 1e-6);
+check('changing controls keeps the view', Math.abs(kept.yawOffset - moved.yawOffset) < 1e-6);
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
 await wait(1800);
 const final = await read();
@@ -277,7 +266,7 @@ const crates = await frame.evaluate(() => {
 });
 await shot('after-reset');
 
-// The driver's view: V and the control, on every car, with everything back after Reset.
+// The driver's view: V and the control, with everything back after Reset.
 const seen = () => frame.evaluate(() => { const a = window.__block.app; return { view: a.values.view, near: a.camera.near, fov: a.camera.fov, x: a.camera.position.x, y: a.camera.position.y, z: a.camera.position.z, cx: a.car.position.x, cy: a.car.position.y, cz: a.car.position.z }; });
 const inCar = (s) => s.near < 0.1 && s.fov > 55 && Math.hypot(s.x - s.cx, s.y - s.cy, s.z - s.cz) < 2.2;
 await page.mouse.click(640, 360);
@@ -293,12 +282,6 @@ await page.mouse.up();
 await wait(1800);
 const lookedBack = await frame.evaluate(() => Math.abs(window.__block.app.view.yawOffset));
 check('driver: a drag looks round, then comes back', lookedBack < 0.05, lookedBack.toFixed(3));
-for (const v of recipe.controls.find((c) => c.id === 'car').options.map((o) => o.value)) {
-	await page.evaluate((c) => window.tell({ type: 'set', id: 'car', value: c }), v);
-	await wait(250);
-	eye = await seen();
-	check(`driver: stays in the seat of ${v}`, eye.view === 'driver' && inCar(eye), JSON.stringify(eye));
-}
 await page.keyboard.down('KeyW');
 await wait(1200);
 await page.keyboard.up('KeyW');
@@ -322,14 +305,14 @@ check('Reset from the seat: chase view, all defaults', eye.view === 'chase' && e
 await page.mouse.click(640, 360);
 await page.keyboard.down('KeyW');
 for (let i = 0; i < 12; i++) {
-	await page.evaluate(([v]) => window.tell({ type: 'set', id: 'car', value: v }), [cars[i % cars.length]]);
+	await page.evaluate(([v]) => window.tell({ type: 'set', id: 'map', value: v }), [i % 2 ? 'stage' : 'yard']);
 	await wait(60);
 }
 await page.keyboard.up('KeyW');
 await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
 await wait(600);
 const rapid = await read();
-check('rapid car changes leave a working car', rapid.wheels === 4 && rapid.up > 0.99, `${crates} bodies before`);
+check('rapid map changes leave a working car', rapid.wheels === 4 && rapid.up > 0.99, `${crates} bodies before`);
 
 const stats = await page.evaluate(() => window.got.stats);
 check('no errors', errors.length === 0, errors.slice(0, 3).join(' | '));

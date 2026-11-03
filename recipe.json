@@ -3,36 +3,6 @@
 	"block": {
 		"controls": [
 			{
-				"id": "car",
-				"label": "Car",
-				"hint": "Two light four-wheel-drive rally cars, a heavy rear-drive muscle car, or a tall soft pickup. Same simulation, different numbers.",
-				"type": "choice",
-				"options": [
-					{
-						"value": "vireo",
-						"label": "Vireo rally",
-						"image": "thumbs/cars/vireo.webp"
-					},
-					{
-						"value": "rally",
-						"label": "Rally car",
-						"image": "thumbs/cars/rally.webp"
-					},
-					{
-						"value": "muscle",
-						"label": "Muscle car",
-						"image": "thumbs/cars/muscle.webp"
-					},
-					{
-						"value": "pickup",
-						"label": "Pickup",
-						"image": "thumbs/cars/pickup.webp"
-					}
-				],
-				"default": "vireo",
-				"essential": true
-			},
-			{
 				"id": "view",
 				"label": "View",
 				"hint": "Behind the car, or from the driver's seat. V swaps them while you drive.",
@@ -110,7 +80,7 @@
 			{
 				"id": "power",
 				"label": "Power",
-				"hint": "The engine, as a share of what this car has.",
+				"hint": "The engine, as a share of what the car has.",
 				"type": "number",
 				"min": 0.4,
 				"max": 2.5,
@@ -120,7 +90,7 @@
 			{
 				"id": "drive",
 				"label": "Front drive",
-				"hint": "How much drive goes to the front: 0 is rear drive, 1 front drive. Below 0, what this car has.",
+				"hint": "How much drive goes to the front: 0 is rear drive, 1 front drive. Below 0, what the car has.",
 				"type": "number",
 				"min": -0.05,
 				"max": 1,
@@ -130,7 +100,7 @@
 			{
 				"id": "lock",
 				"label": "Steering lock",
-				"hint": "How far the front wheels can turn, as a share of what this car has.",
+				"hint": "How far the front wheels can turn, as a share of what the car has.",
 				"type": "number",
 				"min": 0.5,
 				"max": 1.4,
@@ -192,18 +162,13 @@
 		{
 			"files": "models/",
 			"license": "CC0-1.0",
-			"author": "Patch (the Vireo, rally car, muscle car, pickup and mannequin)"
+			"author": "Patch (the Vireo and the mannequin)"
 		},
 		{
 			"files": "audio/",
 			"license": "CC0-1.0",
 			"source": "https://freesound.org",
 			"author": "Recordings from Freesound, by the people listed in audio/CREDITS.txt"
-		},
-		{
-			"files": "thumbs/",
-			"license": "CC0-1.0",
-			"author": "Patch (stills of this demo)"
 		},
 		{
 			"files": "stage/*-diff.webp",

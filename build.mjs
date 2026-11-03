@@ -1,7 +1,6 @@
 // Builds the car block's demo into dist/ (index.html at the top) with the files it loads and their licences:
 // `npm install`, then `npm run build`.
-// - The cars and mannequin are in public/models and go in as they are (make-models.mjs made the cars from the lab's models).
-// - The Car choice's pictures, thumbs/cars/*.webp, are stills of this demo (make-thumbs.mjs), kept in the repo.
+// - The car and mannequin are in public/models and go in as they are.
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,7 +19,6 @@ put('LICENSE', 'LICENSE.txt');
 put('LICENCE-NOTES.md', 'LICENCE-NOTES.md');
 put('CREDITS.txt', 'CREDITS.txt');
 put('third-party', 'third-party');
-put('thumbs', 'thumbs');
 
 let bytes = 0;
 const sizes = {};

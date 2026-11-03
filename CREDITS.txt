@@ -23,8 +23,8 @@ The rendering
   three.js authors, three.js 0.186.1, MIT License
   https://github.com/mrdoob/three.js
 
-The cars
-  Patch: Vireo rally, rally car, muscle car and pickup, CC0 1.0
+The car
+  Patch: Vireo rally, CC0 1.0. Its makers and sponsors are made up.
 
 The mannequin
   Patch: the 1.8 m scale figure, CC0 1.0
@@ -53,5 +53,5 @@ The rally stage's trees
 The stage's road and land, its grass, poles, boards and gantry
   Patch: made in code, MIT License. The rally and tyre names on the banner are made up.
 
-The yard, its textures, the tyre marks, the dust and the pictures in thumbs/
-  Patch: made in code or stills of this demo, CC0 1.0
+The yard, its textures, the tyre marks and the dust
+  Patch: made in code, CC0 1.0

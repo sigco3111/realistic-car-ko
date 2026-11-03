@@ -1,11 +1,5 @@
 The recordings behind the demo's sounds. Each is cut, levelled and looped by tools/make-sounds.py from the preview Freesound serves.
 
-1978 Cadillac Eldorado Biarritz – Engine Start, Exhaust Idle, Revving and Shutdown by inspire153, CC0-1.0, https://freesound.org/people/inspire153/sounds/873856/
-  engine-muscle-0.ogg
-Audi V8 Acceleration Sound by FFKoenigsegg20012017, CC0-1.0, https://freesound.org/people/FFKoenigsegg20012017/sounds/339703/
-  engine-muscle-1.ogg, engine-muscle-2.ogg, engine-muscle-3.ogg, engine-muscle-4.ogg
-Ford Ranger (2000) RPM variations outside 4 mics by YannSauvin, CC0-1.0, https://freesound.org/people/YannSauvin/sounds/779214/
-  engine-pickup-0.ogg, engine-pickup-1.ogg
 Subaru forester - Engine sound by Ykropiw, CC0-1.0, https://freesound.org/people/Ykropiw/sounds/397351/
   engine-rally-0.ogg
 DynoJet Scion FR-S by dezoris, CC0-1.0, https://freesound.org/people/dezoris/sounds/183654/

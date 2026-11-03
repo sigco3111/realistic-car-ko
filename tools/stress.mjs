@@ -57,8 +57,6 @@ await page.evaluate(() => {
 	window.__stress.longest = 0;
 });
 await page.mouse.click(800, 450);
-const rand = (a) => a[Math.floor(Math.random() * a.length)];
-const cars = ['muscle', 'vireo', 'rally', 'pickup'];
 const set = (id, value) => page.evaluate(([i, v]) => window.__block.app.set(i, v), [id, value]);
 const started = Date.now();
 let round = 0;
@@ -89,7 +87,7 @@ while (Date.now() - started < seconds * 1000) {
 	for (const k of [...held]) await press(k, false);
 	// Then fiddle.
 	const what = round % 6;
-	if (what === 0) await set('car', rand(cars));
+	if (what === 0) await set('power', 0.4 + Math.random() * 2.1);
 	if (what === 1) await set('grip', 0.4 + Math.random() * 1.2);
 	if (what === 2) await set('assists', Math.random() < 0.5);
 	if (what === 3) await set('slow', Math.random() < 0.5 ? 0 : 0.8);

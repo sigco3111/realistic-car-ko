@@ -3,6 +3,7 @@ dist/
 shots/
 .vite.log
 tools/out/
+__pycache__/
 tools/rapier17/
 tools/trace.mjs
 tools/flip-trace.mjs

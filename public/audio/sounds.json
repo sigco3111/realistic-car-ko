@@ -36,53 +36,6 @@
    "pops": "pop",
    "offTone": 1500,
    "offGain": 0.5
-  },
-  "muscle": {
-   "loops": [
-    {
-     "file": "engine-muscle-0.ogg",
-     "rpm": 750,
-     "gain": 0.42
-    },
-    {
-     "file": "engine-muscle-1.ogg",
-     "rpm": 3490,
-     "gain": 1
-    },
-    {
-     "file": "engine-muscle-2.ogg",
-     "rpm": 3959,
-     "gain": 1
-    },
-    {
-     "file": "engine-muscle-3.ogg",
-     "rpm": 4373,
-     "gain": 1
-    },
-    {
-     "file": "engine-muscle-4.ogg",
-     "rpm": 4742,
-     "gain": 1
-    }
-   ],
-   "offTone": 1200,
-   "offGain": 0.55
-  },
-  "pickup": {
-   "loops": [
-    {
-     "file": "engine-pickup-0.ogg",
-     "rpm": 870,
-     "gain": 0.8
-    },
-    {
-     "file": "engine-pickup-1.ogg",
-     "rpm": 2010,
-     "gain": 1
-    }
-   ],
-   "offTone": 1200,
-   "offGain": 0.6
   }
  },
  "loops": {

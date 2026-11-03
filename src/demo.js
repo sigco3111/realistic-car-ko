@@ -8,7 +8,7 @@ import { patchBlock } from 'patch-block';
 import { block as recipeBlock } from '../recipe.json';
 import { Car } from './car.js';
 import { CarModel, measureCar } from './car-model.js';
-import { CARS, specOf } from './cars.js';
+import { VIREO, specOf } from './vireo.js';
 import { addDirt } from './dirt.js';
 import { CarEffects } from './effects.js';
 import { Mannequin, prepareMannequin } from './mannequin.js';
@@ -41,7 +41,6 @@ const canvas = document.getElementById('view');
 const cover = document.getElementById('cover');
 const defaults = Object.fromEntries(recipeBlock.controls.map((c) => [c.id, c.default]));
 const values = { ...defaults };
-if (params.get('car')) defaults.car = values.car = params.get('car');
 if (params.get('view')) defaults.view = values.view = params.get('view');
 if (params.get('map')) defaults.map = values.map = params.get('map');
 
@@ -71,7 +70,7 @@ const breathe = () => new Promise((go) => setTimeout(go));
 block.progress?.(0.05, 'Loading the physics');
 const RAPIER = (await import('@dimforge/rapier3d-compat')).default;
 await RAPIER.init();
-block.progress?.(0.2, 'Loading the cars');
+block.progress?.(0.2, 'Loading the car');
 
 // Rendering
 let pixelRatio = Math.min(devicePixelRatio, 1.5);
@@ -171,14 +170,12 @@ world.timestep = STEP;
 const events = new RAPIER.EventQueue(true);
 
 const loader = new GLTFLoader();
-const ids = Object.keys(CARS);
-// A weak card gets a car's lighter model, where it has one. `?light` asks for it, for checks.
+// A weak card gets the car's lighter model. `?light` asks for it, for checks.
 const context = renderer.getContext();
 const cardInfo = context.getExtension('WEBGL_debug_renderer_info');
 const card = cardInfo ? context.getParameter(cardInfo.UNMASKED_RENDERER_WEBGL) : '';
 const weakCard = params.has('light') || /intel|swiftshader|llvmpipe|software|basic render|mali|adreno|powervr/i.test(card);
-const [dummyGltf, ...carGltfs] = await Promise.all(['models/mannequin.glb', ...ids.map((id) => (weakCard && CARS[id].light) || CARS[id].file)].map((f) => loader.loadAsync(f)));
-const loaded = Object.fromEntries(ids.map((id, i) => [id, carGltfs[i].scene]));
+const [dummyGltf, carGltf] = await Promise.all(['models/mannequin.glb', weakCard ? VIREO.light : VIREO.file].map((f) => loader.loadAsync(f)));
 block.progress?.(0.5, 'Building the yard');
 await breathe();
 
@@ -236,22 +233,14 @@ const figureBySensor = new Map(figures.map((f) => [f.sensor.handle, f]));
 
 const effects = new CarEffects(scene);
 
-// The cars: each model is prepared once, and only the physics are rebuilt when you change car.
+// The car: its model's measured, and the physics is built to fit.
 const START = { x: 0, y: 0.06, z: 0 };
-const measured = {};
-const models = {};
-const dirt = {};
 const CLEAN = 0.12;
-for (const id of ids) {
-	dirt[id] = addDirt(loaded[id], { value: CLEAN });
-	measured[id] = measureCar(loaded[id]);
-	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
-	models[id] = new CarModel(loaded[id], stand, { ...CARS[id].travelDrawn, wheelTurn: CARS[id].wheelTurn, wheelAxis: CARS[id].wheelAxis, cabin: CARS[id].cabin, cabinGlow: CARS[id].cabinGlow });
-	models[id].object.visible = false;
-	scene.add(models[id].object);
-}
-let car = null;
-let model = null;
+const dirt = addDirt(carGltf.scene, { value: CLEAN });
+const measured = measureCar(carGltf.scene);
+const stand = { wheels: measured.wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
+const model = new CarModel(carGltf.scene, stand, { ...VIREO.travelDrawn, wheelTurn: VIREO.wheelTurn, wheelAxis: VIREO.wheelAxis, cabin: VIREO.cabin, cabinGlow: VIREO.cabinGlow });
+scene.add(model.object);
 let view = null;
 let chase = null;
 let driver = null;
@@ -260,30 +249,22 @@ const speedOf = (body) => {
 	return v ? Math.hypot(v.x, v.y, v.z) : 0;
 };
 
-function makeCar(id) {
-	if (car) car.dispose();
-	if (model) model.object.visible = false;
-	const m = measured[id];
-	car = new Car(RAPIER, world, { ...specOf(id), wheels: m.wheels, size: CARS[id].bodySize ?? m.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: (x, z) => land.surfaceAt(x, z) });
-	car.base = { ...car.tune, hertz: [...car.tune.hertz] };
-	car.on('stuck', () => car.flip());
-	car.on('land', (speed) => {
-		if (speed < 1.5) return;
-		sounds.play('land', Math.min(1, speed / 7), 1, 1 - values.slow * 0.75);
-		if (speed < 3) return;
-		effects.burst(car.position.x, car.position.y + 0.3, car.position.z, Math.min(14, Math.floor(speed * 1.5)), 2 + speed * 0.3, 1.6, land.surfaceAt(car.position.x, car.position.z));
-	});
-	car.on('shift', () => {
-		const strength = 0.35 + car.input.throttle * 0.35;
-		sounds.play('gear', strength, 1, 1 - values.slow * 0.75);
-	});
-	sounds.useEngine(CARS[id].engine);
-	applyControls();
-	model = models[id];
-	model.object.visible = true;
-	model.attach(car);
-	chase?.fit(car);
-}
+const car = new Car(RAPIER, world, { ...specOf(), wheels: measured.wheels, size: VIREO.bodySize ?? measured.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: (x, z) => land.surfaceAt(x, z) });
+car.base = { ...car.tune, hertz: [...car.tune.hertz] };
+car.on('stuck', () => car.flip());
+car.on('land', (speed) => {
+	if (speed < 1.5) return;
+	sounds.play('land', Math.min(1, speed / 7), 1, 1 - values.slow * 0.75);
+	if (speed < 3) return;
+	effects.burst(car.position.x, car.position.y + 0.3, car.position.z, Math.min(14, Math.floor(speed * 1.5)), 2 + speed * 0.3, 1.6, land.surfaceAt(car.position.x, car.position.z));
+});
+car.on('shift', () => {
+	const strength = 0.35 + car.input.throttle * 0.35;
+	sounds.play('gear', strength, 1, 1 - values.slow * 0.75);
+});
+sounds.useEngine(VIREO.engine);
+applyControls();
+model.attach(car);
 
 function applyControls() {
 	const b = car.base;
@@ -304,9 +285,9 @@ function placeCar() {
 	effects.reset();
 }
 
-// Chase or driver. A car with nowhere to put the eye only has the chase view.
+// Chase or driver. A model with nowhere to put the eye only has the chase view.
 function applyView() {
-	const eye = model.eye ?? CARS[values.car].eye;
+	const eye = model.eye;
 	if (values.view === 'driver' && !eye) {
 		values.view = 'chase';
 		block.state({ ...values });
@@ -324,12 +305,10 @@ function applyView() {
 }
 
 function reset() {
-	const wasCar = values.car;
 	const wasMap = values.map;
 	Object.assign(values, defaults);
 	if (wasMap !== values.map) applyMap();
-	if (wasCar !== values.car) makeCar(values.car);
-	else applyControls();
+	applyControls();
 	block.state({ ...values });
 	yard.reset();
 	stage.reset();
@@ -339,7 +318,7 @@ function reset() {
 	chase.reset(car);
 	applyView();
 	placeCar();
-	for (const id of ids) dirt[id].value = CLEAN;
+	dirt.value = CLEAN;
 	view.glideIn();
 }
 
@@ -421,7 +400,6 @@ const resize = () => {
 addEventListener('resize', resize);
 resize();
 
-makeCar(values.car);
 chase = view = new ChaseView(camera, car);
 chase.reset(car);
 driver = new DriverView(camera);
@@ -528,9 +506,8 @@ function stepWorld() {
 		}
 	}
 	model.stepped();
-	// Loose ground slowly dirties a car that shows it: a few hundred metres to go from washed to filthy.
-	const grime = dirt[values.car];
-	if (grime && car.wheels[2].inContact && car.wheels[2].surface !== 'tarmac') grime.value = Math.min(1, grime.value + (Math.abs(car.forwardSpeed) * dt) / 450);
+	// Loose ground slowly dirties the car: a few hundred metres to go from washed to filthy.
+	if (car.wheels[2].inContact && car.wheels[2].surface !== 'tarmac') dirt.value = Math.min(1, dirt.value + (Math.abs(car.forwardSpeed) * dt) / 450);
 	if (car.position.y < land.heightAt(car.position.x, car.position.z) - 8 || Math.abs(car.position.x) > land.bounds || Math.abs(car.position.z) > land.bounds) car.moveTo(START, COURSE_YAW);
 	return dt;
 }
@@ -661,11 +638,7 @@ app = {
 	set(id, value) {
 		if (values[id] === value) return;
 		values[id] = value;
-		if (id === 'car') {
-			makeCar(value);
-			placeCar();
-			applyView();
-		} else if (id === 'map') {
+		if (id === 'map') {
 			applyMap();
 			yard.reset();
 			for (const f of figures) f.reset();
@@ -676,7 +649,7 @@ app = {
 };
 window.__block = { app, times, renderer, block };
 
-// Warm-up, all behind the cover: settle the world, send everything to the GPU, draw every car and every kind of thing once.
+// Warm-up, all behind the cover: settle the world, send everything to the GPU, draw every kind of thing once.
 block.progress?.(0.65, 'Settling the yard');
 await breathe();
 for (let i = 0; i < 120; i++) stepWorld();
@@ -687,7 +660,6 @@ figures[0].update(STEP);
 block.progress?.(0.75, 'Preparing the pictures');
 await breathe();
 const gl = renderer.getContext();
-for (const id of ids) models[id].object.visible = true;
 stage.group.visible = true;
 yard.group.visible = true;
 yardSky.visible = true;
@@ -709,7 +681,6 @@ block.progress?.(0.88, 'Preparing the pictures');
 await breathe();
 renderer.render(scene, camera);
 await breathe();
-for (const id of ids) models[id].object.visible = id === values.car;
 for (const [o, visible, culled] of wasDrawn) {
 	o.visible = visible;
 	o.frustumCulled = culled;

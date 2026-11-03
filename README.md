@@ -7,7 +7,7 @@ engine: three
 
 A realistic car on Rapier at real scale and real gravity: tyres that build grip, peak and let go, suspension you can see working, an engine and gearbox, a handbrake that locks the rears, and tarmac, gravel and grass. Give it any model with separate wheels.
 
-Rapier carries the body and answers the ray queries; everything a car does is worked out in `src/car.js` and applied as forces. The tyre follows **Dechode's** [Godot Advanced Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle), and the gearbox, suspension rates and assists follow [Godot Easy Vehicle Physics](https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics) by **David Shoemaker, Dechode and Baron Wittman**, all MIT. In the live demo, drive the Vireo rally, rally car, muscle car or pickup on a rally stage through forest, or round the open yard. WASD drives, Space is the handbrake, V is the driver's seat, R resets. Drag turns the view and scroll zooms.
+Rapier carries the body and answers the ray queries; everything a car does is worked out in `src/car.js` and applied as forces. The tyre follows **Dechode's** [Godot Advanced Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle), and the gearbox, suspension rates and assists follow [Godot Easy Vehicle Physics](https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics) by **David Shoemaker, Dechode and Baron Wittman**, all MIT. In the live demo, drive the Vireo, Patch's own Group B-style rally car, on a rally stage through forest, or round the open yard. WASD drives, Space is the handbrake, V is the driver's seat, R resets. Drag turns the view and scroll zooms.
 
 Code here is MIT, art and sound are CC0, except the stage's trees and leaves, which are MIT.
 
@@ -58,7 +58,7 @@ look.update(frameTime, alpha);
 view.update(car, look.object.position, frameTime);
 ```
 
-To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `car.wheels`: `travelled` (0 at full droop, 1 fully compressed), `load` in newtons, `slip` (1 is the tyre's peak) and `surface`. `src/cars.js` has four complete cars to start a tune from, and `DEFAULTS` in `src/car.js` lists everything you can set.
+To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `car.wheels`: `travelled` (0 at full droop, 1 fully compressed), `load` in newtons, `slip` (1 is the tyre's peak) and `surface`. `src/vireo.js` has the Vireo's complete numbers to start a tune from, and `DEFAULTS` in `src/car.js` lists everything you can set.
 
 ## What's in it
 
@@ -80,8 +80,6 @@ V, or the View control, swaps between the chase camera and the driver's seat. `s
 - **What moves in a model:** the steering wheel on any car. With `cabin` numbers, the needles, pedals, handbrake and gear lever too (see `CarModel`). An empty called `eye_driver` is the eye; without one, say where with `eye` in `src/cars.js`.
 - **From the seat:** glass thins, dust stays out of the cabin, and trim lifts a little where `cabinGlow` says.
 
-The Vireo has all of it. The other three cars have only a steering wheel moving, in plainer cabins.
-
 ## The rally stage
 
 A 3.4 km loop round the open yard, with 1.1 km sealed and 2.3 km of gravel, hairpins, crests and a fast section, on 2 km square of land. Its shape is pure data in `src/stage-shape.js`; `src/stage.js` draws the land and road and makes them solid.
@@ -95,7 +93,7 @@ A 3.4 km loop round the open yard, with 1.1 km sealed and 2.3 km of gravel, hair
 
 Real recordings only, all CC0, listed in `public/audio/CREDITS.txt`. `tools/sound-spec.py` says which recording each sound is cut from, so swapping one is a line there, then `python -I tools/fetch-sounds.py <id>` and `python -I tools/make-sounds.py`.
 
-- **Engines** are loops at steady revs, faded from one to the next and pitched by the car's real revs. Most are cut from a pull up the revs on a dyno, bent to hold one pitch (`tools/sound_track.py`). Lifting off muffles and quietens them, and the rally cars spit a little.
+- **Engines** are loops at steady revs, faded from one to the next and pitched by the car's real revs. Most are cut from a pull up the revs on a dyno, bent to hold one pitch (`tools/sound_track.py`). Lifting off muffles and quietens them, and it spits a little.
 - **Under the car,** road noise, gravel, squeal and wind follow speed and slip.
 - **Hits** are chosen by what was hit and how hard, never the same one twice running, with the car's own body in there too.
 - **From the seat,** what's outside is muffled and the engine's nearer.
@@ -104,25 +102,25 @@ Real recordings only, all CC0, listed in `public/audio/CREDITS.txt`. `tools/soun
 
 ## How it measures up
 
-Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
+Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs`:
 
 | | Tarmac | Gravel |
 |---|---:|---:|
 | 0 to 100 km/h | 3.5 s | 4.1 s |
-| 100 to 0 km/h, ABS | 35.3 m, 1.09 g | 44.9 m, 0.87 g |
+| 100 to 0 km/h, ABS | 35.5 m, 1.08 g | 44.9 m, 0.87 g |
 | 100 to 0 km/h, no ABS | 36.6 m, 1.05 g | 47.1 m, 0.84 g |
 | Most grip, held at 70 km/h | 1.02 g | 0.77 g |
 | Body roll there | 4.9° | 4.8° |
-| Nose dive on the brakes | 3.4° | 2.7° |
+| Nose dive on the brakes | 3.3° | 2.6° |
 
-How far a slide carries, by `node tools/slide-bench.mjs vireo`:
+How far a slide carries, by `node tools/slide-bench.mjs`:
 
 | | Tarmac | Gravel | Grass |
 |---|---:|---:|---:|
-| Side-on from 90 km/h | 30.9 m | 33.8 m | 39.7 m |
-| Handbrake held from 90 km/h, straight | 45.5 m | 50.4 m | 55.3 m |
-| Handbrake and full lock held from 90 km/h | 30.4 m | 35.7 m | 44.4 m |
-| A handbrake flick from 60 km/h, then let go | 14.2 m, 1.7 s | 16.9 m, 2.0 s | 21.5 m, 4.1 s |
+| Side-on from 90 km/h | 30.6 m | 33.9 m | 39.7 m |
+| Handbrake held from 90 km/h, straight | 45.5 m | 46.2 m | 52.2 m |
+| Handbrake and full lock held from 90 km/h | 30.5 m | 35.7 m | 44.4 m |
+| A handbrake flick from 60 km/h, then let go | 14.2 m, 1.7 s | 17.0 m, 2.0 s | 21.7 m, 4.2 s |
 
 ## What it's bad at
 
@@ -134,7 +132,7 @@ How far a slide carries, by `node tools/slide-bench.mjs vireo`:
 - **The surface is looked up by you.** `surfaceAt` is called four times a step, so keep it cheap.
 - **Wheels clip the arches** on the hardest landings (`bump` and `droop` on `CarModel`).
 - **On a keyboard, steering is all or nothing.** The assists make up for that; with them off it's hard work, on purpose. A gamepad's analogue input isn't wired up in the demo.
-- **The engines are cut from what could be found.** There's no real recording of the Vireo, and the rally car shares its engine. Low revs fade between two recordings, and the pickup has only two steady notes, so it's stretched furthest.
+- **The engines are cut from what could be found.** There's no real recording of the Vireo. Low revs fade between two recordings, a flat-four's idle and a dyno pull.
 - **Off-throttle is the same recording, muffled and quieter**, not a recording of a car on overrun.
 - **The handbrake isn't pure.** A real one only holds the rears; here a little foot brake comes on with it, so holding it stops the car.
 - **A snapped pole just goes.** Nothing flies off, there's only some dust.
@@ -145,8 +143,8 @@ How far a slide carries, by `node tools/slide-bench.mjs vireo`:
 | | |
 |---|---|
 | `src/car.js` | The car: physics only, no three.js |
-| `src/cars.js` | Four cars' numbers |
-| `src/dirt.js` | The Vireo's dirt: `value` from clean to a whole stage of gravel |
+| `src/vireo.js` | The Vireo's numbers |
+| `src/dirt.js` | The car's dirt: `value` from clean to a whole stage of gravel |
 | `src/car-model.js` | Fits any model to a car and moves its wheels |
 | `src/view.js` | The chase camera |
 | `src/driver-view.js` | The driver's view |
@@ -161,6 +159,6 @@ How far a slide carries, by `node tools/slide-bench.mjs vireo`:
 | `tools/slide-bench.mjs` | How far slides and handbrake stops carry, on each surface |
 | `tools/laptop-check.mjs` | The load on the card, and a first load with the processor slowed |
 | `tools/mark-check.mjs` | Checks tyre marks stay where they were laid: `node tools/mark-check.mjs <demo url>` |
-| `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs vireo --curve` |
+| `tools/bench.mjs` | Measures the car: `node tools/bench.mjs --curve` |
 
 `npm install`, then `npm run dev` for the demo or `npm run build` for `dist/`. Every part's source and licence is in `LICENCE-NOTES.md` and `CREDITS.txt`.

@@ -35,7 +35,7 @@ HITS = {
     'Jump landings and thumps': [('837875', 2), ('508170', 1)],
 }
 ROLE = {
-    'engine-rally': 'Engine: Vireo and rally car, low revs to high', 'engine-muscle': 'Engine: muscle car, low revs to high', 'engine-pickup': 'Engine: pickup, low revs to high',
+    'engine-rally': 'Engine, low revs to high',
     'loop-road': 'Road noise', 'loop-gravel': 'Gravel under the tyres', 'loop-squeal': 'Tyre squeal', 'loop-wind': 'Wind', 'loop-scrape': 'Metal scraping',
     'metal-heavy': 'Crashes into metal, hard', 'metal-light': 'Knocks against metal, light', 'rock-heavy': 'Rock, hard', 'rock-light': 'Rock, light', 'wood-heavy': 'Wood and trunks, hard', 'wood-light': 'Wood, light',
     'snap': 'Poles and boards snapping', 'figure': 'Hitting a mannequin', 'thump': 'Wheels over something sharp', 'land': 'Jump landings', 'gear': 'Gear change', 'pop': 'Exhaust pops',

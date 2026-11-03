@@ -5,8 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "vite --config vite.config.mjs --host 127.0.0.1 --port 5393 --strictPort",
-    "thumbs": "node make-thumbs.mjs"
+    "dev": "vite --config vite.config.mjs --host 127.0.0.1 --port 5393 --strictPort"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.17.3",
