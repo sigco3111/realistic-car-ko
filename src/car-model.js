@@ -94,6 +94,18 @@ function merged(root, keep) {
 }
 
 // A part's meshes, baked in the part's own frame or the model's, and held by a group at the part's origin.
+const CABIN = {
+	rpm: 'part_needle_rpm',
+	speed: 'part_needle_speed',
+	clutch: 'part_pedal_clutch',
+	brake: 'part_pedal_brake',
+	throttle: 'part_pedal_throttle',
+	handbrake: 'part_handbrake',
+	gear: 'part_gear_lever',
+};
+const AXIS_X = new Vector3(1, 0, 0);
+const AXIS_Z = new Vector3(0, 0, 1);
+
 function holdPart(node, frame = 'model') {
 	const at = new Vector3().setFromMatrixPosition(node.matrixWorld);
 	const group = new Group();
@@ -114,19 +126,24 @@ function holdPart(node, frame = 'model') {
  * - part_lca_* and part_uca_*: suspension arms, origin at the inboard pivot, turning about the car's long axis.
  * - part_spring_*: origin at the top mount, local +Y towards the lower mount, aimed at an empty mount_spring_* on the
  *   lower arm and stretched along Y.
- * - part_steering_wheel: turning about whichever of its own axes runs most along the car.
+ * - part_steering_wheel: turning about whichever of its own axes runs most along the car, or `wheelAxis` when it's given.
+ * - The cabin, with `cabin` giving how far each part moves: part_needle_rpm and part_needle_speed turning about local Z,
+ *   part_pedal_clutch, part_pedal_brake, part_pedal_throttle and part_handbrake about local X, and part_gear_lever
+ *   rocking about local X on a shift. Needles and pedals only show after `showInside(true)`.
  */
 export class CarModel {
-	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr', rl: 'part_steer_rl', rr: 'part_steer_rr' }, bump = 0.13, droop = 0.2 } = {}) {
+	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr', rl: 'part_steer_rl', rr: 'part_steer_rr' }, bump = 0.13, droop = 0.2, wheelTurn = 5, wheelAxis = null, cabin = null } = {}) {
 		this.car = car;
 		this.object = new Group();
 		this.object.name = 'car';
 		this.bump = bump;
 		this.droop = droop;
+		this.wheelTurn = wheelTurn;
 		model.updateMatrixWorld(true);
 		const moving = new Set([...Object.values(names), ...Object.values(steerNames)]);
 		for (const key of Object.keys(names)) for (const part of ['part_lca_', 'part_uca_', 'part_spring_']) moving.add(part + key);
 		moving.add('part_steering_wheel');
+		for (const name of Object.values(CABIN)) moving.add(name);
 		const nodes = new Map();
 		for (const w of car.wheels) {
 			const wheel = model.getObjectByName(names[w.key]);
@@ -190,6 +207,8 @@ export class CarModel {
 			nodes.set(w.key, node);
 		}
 		for (const mesh of merged(model, (o) => moving.has(o.name))) this.object.add(mesh);
+		// An empty called eye_driver is where the driver's eye goes.
+		this.eye = model.getObjectByName('eye_driver')?.getWorldPosition(new Vector3()) ?? null;
 		const wheelNode = model.getObjectByName('part_steering_wheel');
 		if (wheelNode) {
 			const { group, inner: into } = holdPart(wheelNode, 'own');
@@ -206,8 +225,26 @@ export class CarModel {
 					axis = local.multiplyScalar(-Math.sign(along));
 				}
 			}
-			this.steeringWheel = { group, restQ: group.quaternion.clone(), axis };
+			this.steeringWheel = { group, restQ: group.quaternion.clone(), axis: wheelAxis ? new Vector3(wheelAxis.x, wheelAxis.y, wheelAxis.z) : axis };
 		}
+		// The cabin's parts, each about its own origin.
+		this.cabin = cabin;
+		this.parts = {};
+		for (const [key, name] of Object.entries(CABIN)) {
+			const node = model.getObjectByName(name);
+			if (!node) continue;
+			const { group, inner: into } = holdPart(node, 'own');
+			for (const mesh of merged(node, () => false)) {
+				mesh.castShadow = false;
+				into.add(mesh);
+			}
+			node.getWorldQuaternion(group.quaternion);
+			this.object.add(group);
+			this.parts[key] = { group, restQ: group.quaternion.clone(), amount: 0 };
+		}
+		this.shiftRock = 0;
+		this.lastGear = 1;
+		this.showInside(false);
 		// A material called brake_light glows when the brakes are on.
 		this.object.traverse((o) => {
 			if (o.isMesh && o.material.name === 'brake_light') this.brakeLight = o.material;
@@ -274,8 +311,46 @@ export class CarModel {
 			this.brakeLight.emissiveIntensity += (on - this.brakeLight.emissiveIntensity) * Math.min(1, dt * 22);
 		}
 		if (this.steeringWheel) {
-			const front = car.wheels.find((w) => w.front);
-			this.steeringWheel.group.quaternion.copy(this.steeringWheel.restQ).multiply(turn.setFromAxisAngle(this.steeringWheel.axis, (front?.steerAngle ?? 0) * 5));
+			const fronts = car.wheels.filter((w) => w.front);
+			const steered = fronts.reduce((sum, w) => sum + w.steerAngle, 0) / (fronts.length || 1);
+			this.steeringWheel.group.quaternion.copy(this.steeringWheel.restQ).multiply(turn.setFromAxisAngle(this.steeringWheel.axis, steered * this.wheelTurn));
+		}
+		if (this.cabin) this.updateCabin(dt);
+	}
+
+	/** Needles and pedals can't be seen from outside, so they only cost a draw from the seat. */
+	showInside(on) {
+		for (const key of ['rpm', 'speed', 'clutch', 'brake', 'throttle']) if (this.parts[key]) this.parts[key].group.visible = on;
+	}
+
+	updateCabin(dt) {
+		const { car, cabin, parts } = this;
+		const input = car.input ?? {};
+		const move = (part, axis, angle) => {
+			if (!part) return;
+			part.group.quaternion.copy(part.restQ).multiply(turn.setFromAxisAngle(axis, angle));
+		};
+		// A needle swings quickly but not instantly, and a foot or hand takes a moment.
+		const follow = (part, wanted, rate) => {
+			if (!part) return 0;
+			part.amount += (wanted - part.amount) * Math.min(1, dt * rate);
+			return part.amount;
+		};
+		if (cabin.rpm) move(parts.rpm, AXIS_Z, cabin.rpm.sign * cabin.rpm.sweep * follow(parts.rpm, Math.min(1, car.rpm / cabin.rpm.full), 14));
+		if (cabin.speed) move(parts.speed, AXIS_Z, cabin.speed.sign * cabin.speed.sweep * follow(parts.speed, Math.min(1, Math.abs(car.forwardSpeed) * 3.6 / cabin.speed.full), 8));
+		const braking = car.gear < 0 ? input.throttle : input.brake;
+		const going = car.gear < 0 ? input.brake : input.throttle;
+		if (cabin.throttle) move(parts.throttle, AXIS_X, cabin.throttle * follow(parts.throttle, going ?? 0, 16));
+		if (cabin.brake) move(parts.brake, AXIS_X, cabin.brake * follow(parts.brake, braking ?? 0, 16));
+		if (cabin.clutch) move(parts.clutch, AXIS_X, cabin.clutch * follow(parts.clutch, car.shifting > 0 ? 1 : 0, 18));
+		if (cabin.handbrake) move(parts.handbrake, AXIS_X, cabin.handbrake * follow(parts.handbrake, input.handbrake ?? 0, 18));
+		if (cabin.gear && parts.gear) {
+			if (car.gear !== this.lastGear) {
+				this.shiftRock = car.gear > this.lastGear ? 1 : -1;
+				this.lastGear = car.gear;
+			}
+			this.shiftRock -= this.shiftRock * Math.min(1, dt * 7);
+			move(parts.gear, AXIS_X, cabin.gear * this.shiftRock);
 		}
 	}
 }

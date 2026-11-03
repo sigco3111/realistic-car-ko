@@ -13,6 +13,7 @@ import { addDirt } from './dirt.js';
 import { CarEffects } from './effects.js';
 import { Mannequin, prepareMannequin } from './mannequin.js';
 import { Sounds } from './sound.js';
+import { DRIVER_FOV, DRIVER_NEAR, DriverView } from './driver-view.js';
 import { ChaseView } from './view.js';
 import { buildYard, COURSE_YAW, place, YARD } from './yard.js';
 
@@ -40,6 +41,7 @@ const cover = document.getElementById('cover');
 const defaults = Object.fromEntries(recipeBlock.controls.map((c) => [c.id, c.default]));
 const values = { ...defaults };
 if (params.get('car')) defaults.car = values.car = params.get('car');
+if (params.get('view')) defaults.view = values.view = params.get('view');
 
 let app = null;
 let paused = false;
@@ -93,7 +95,9 @@ canvas.addEventListener('webglcontextlost', (e) => {
 });
 const scene = new Scene();
 scene.fog = new Fog('#e7bd8d', 170, 620);
-const camera = new PerspectiveCamera(38, 1, 0.5, 1400);
+const CHASE_FOV = 38;
+const CHASE_NEAR = 0.5;
+const camera = new PerspectiveCamera(CHASE_FOV, 1, CHASE_NEAR, 1400);
 // What the paint and glass reflect: this yard's own sky over its own ground, not a room with bright ceiling panels, which
 // showed in a glossy bonnet as a white patch hiding the paint.
 const reflected = new Scene();
@@ -207,13 +211,15 @@ for (const id of ids) {
 	dirt[id] = addDirt(loaded[id], { value: CLEAN });
 	measured[id] = measureCar(loaded[id]);
 	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
-	models[id] = new CarModel(loaded[id], stand, CARS[id].travelDrawn ?? {});
+	models[id] = new CarModel(loaded[id], stand, { ...CARS[id].travelDrawn, wheelTurn: CARS[id].wheelTurn, wheelAxis: CARS[id].wheelAxis, cabin: CARS[id].cabin });
 	models[id].object.visible = false;
 	scene.add(models[id].object);
 }
 let car = null;
 let model = null;
 let view = null;
+let chase = null;
+let driver = null;
 const speedOf = (body) => {
 	const v = body?.linvel();
 	return v ? Math.hypot(v.x, v.y, v.z) : 0;
@@ -235,7 +241,7 @@ function makeCar(id) {
 	model = models[id];
 	model.object.visible = true;
 	model.attach(car);
-	view?.fit(car);
+	chase?.fit(car);
 }
 
 function applyControls() {
@@ -257,6 +263,23 @@ function placeCar() {
 	effects.reset();
 }
 
+// Chase or driver. A car with nowhere to put the eye only has the chase view.
+function applyView() {
+	const eye = model.eye ?? CARS[values.car].eye;
+	if (values.view === 'driver' && !eye) {
+		values.view = 'chase';
+		block.state({ ...values });
+	}
+	const inside = values.view === 'driver';
+	model.showInside(inside);
+	if (inside) driver.seat(model, eye);
+	else if (view === driver) chase.jump(car);
+	view = inside ? driver : chase;
+	camera.near = inside ? DRIVER_NEAR : CHASE_NEAR;
+	camera.fov = inside ? DRIVER_FOV : CHASE_FOV;
+	camera.updateProjectionMatrix();
+}
+
 function reset() {
 	const wasCar = values.car;
 	Object.assign(values, defaults);
@@ -266,9 +289,11 @@ function reset() {
 	yard.reset();
 	for (const f of figures) f.reset();
 	events.clear();
+	driver.reset();
+	chase.reset(car);
+	applyView();
 	placeCar();
 	for (const id of ids) dirt[id].value = CLEAN;
-	view.reset(car);
 	view.glideIn();
 }
 
@@ -288,11 +313,15 @@ const light = (k, on) => keysEl.querySelector(`[data-k="${k}"]`)?.classList.togg
 addEventListener('keydown', (e) => {
 	const k = keyName(e);
 	if (!k || e.ctrlKey || e.metaKey || e.altKey) return;
-	if (['w', 'a', 's', 'd', 'space', 'r'].includes(k)) e.preventDefault();
+	if (['w', 'a', 's', 'd', 'space', 'r', 'v'].includes(k)) e.preventDefault();
 	if (e.repeat) return;
 	held.add(k);
 	light(k, true);
 	if (k === 'r' && app) reset();
+	if (k === 'v' && app) {
+		app.set('view', values.view === 'driver' ? 'chase' : 'driver');
+		block.state({ ...values });
+	}
 });
 addEventListener('keyup', (e) => {
 	const k = keyName(e);
@@ -322,7 +351,10 @@ canvas.addEventListener('pointermove', (e) => {
 	view.drag(e.clientX - dragging.x, e.clientY - dragging.y);
 	dragging = { x: e.clientX, y: e.clientY };
 });
-canvas.addEventListener('pointerup', () => (dragging = null));
+canvas.addEventListener('pointerup', () => {
+	dragging = null;
+	view?.release?.();
+});
 canvas.addEventListener(
 	'wheel',
 	(e) => {
@@ -344,8 +376,10 @@ addEventListener('resize', resize);
 resize();
 
 makeCar(values.car);
-view = new ChaseView(camera, car);
-view.reset(car);
+chase = view = new ChaseView(camera, car);
+chase.reset(car);
+driver = new DriverView(camera);
+applyView();
 
 /** A figure's been reached: it lets go, moving with whatever hit it and lifted a little by the bumper. The rest is contact. */
 function knock(figure, v, speed) {
@@ -501,7 +535,9 @@ function frame(now) {
 
 app = {
 	world,
-	view,
+	get view() {
+		return view;
+	},
 	yard,
 	figures,
 	effects,
@@ -527,7 +563,9 @@ app = {
 		if (id === 'car') {
 			makeCar(value);
 			placeCar();
-		} else if (id !== 'slow') applyControls();
+			applyView();
+		} else if (id === 'view') applyView();
+		else if (id !== 'slow') applyControls();
 	},
 };
 window.__block = { app, times, renderer, block };
@@ -567,7 +605,8 @@ car.moveTo(START, COURSE_YAW);
 for (let i = 0; i < 180; i++) stepWorld();
 yard.reset();
 model.attach(car);
-view.reset(car);
+chase.reset(car);
+applyView();
 draw(STEP, STEP, 1, performance.now());
 // Wait until the GPU has really caught up.
 const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);

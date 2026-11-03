@@ -29,6 +29,18 @@ const recipe = {
 				default: 'vireo',
 				essential: true,
 			},
+			{
+				id: 'view',
+				label: 'View',
+				hint: 'Behind the car, or from the driver\'s seat. V swaps them while you drive.',
+				type: 'choice',
+				options: [
+					{ value: 'chase', label: 'Chase' },
+					{ value: 'driver', label: 'Driver' },
+				],
+				default: 'chase',
+				essential: true,
+			},
 			{ id: 'assists', label: 'Assists', hint: 'ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.', type: 'toggle', default: true, essential: true },
 			{ id: 'grip', label: 'Grip', hint: 'How much all the tyres hold, on every surface. 1 is real tyres.', type: 'number', min: 0.4, max: 1.35, step: 0.05, default: 1, essential: true },
 			{ id: 'stiffness', label: 'Suspension', hint: 'How stiff the springs are. Low and the body leans and dives; high and it stays flat.', type: 'number', min: 0.6, max: 2.2, step: 0.05, default: 1, essential: true },

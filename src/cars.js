@@ -10,6 +10,9 @@ export const CARS = {
 		size: { width: 1.9, height: 1.37, length: 4.02 },
 		bodySize: { width: 1.9, height: 1.37, length: 4.02 },
 		travelDrawn: { bump: 0.13, droop: 0.13 },
+		// Where the driver's eye sits, until the model says with an eye_driver.
+		eye: { x: 0.38, y: 1.1, z: -0.08 },
+		wheelTurn: 8,
 		wheels: [
 			{ key: 'fl', x: 0.785, y: 0.325, z: 1.26, radius: 0.325, front: true },
 			{ key: 'fr', x: -0.785, y: 0.325, z: 1.26, radius: 0.325, front: true },
@@ -40,6 +43,7 @@ export const CARS = {
 	rally: {
 		label: 'Rally car',
 		file: 'models/rally-car.glb',
+		eye: { x: 0.36, y: 1.14, z: -0.5 },
 		size: { width: 1.94, height: 1.49, length: 4.31 },
 		wheels: [
 			{ key: 'fl', x: 0.78, y: 0.335, z: 1.2, radius: 0.335, front: true },
@@ -69,6 +73,7 @@ export const CARS = {
 	muscle: {
 		label: 'Muscle car',
 		file: 'models/muscle-car.glb',
+		eye: { x: 0.38, y: 1.05, z: -0.62 },
 		size: { width: 2.07, height: 1.27, length: 5.02 },
 		wheels: [
 			{ key: 'fl', x: 0.81, y: 0.4, z: 1.47, radius: 0.38, front: true },
@@ -105,6 +110,7 @@ export const CARS = {
 	pickup: {
 		label: 'Pickup',
 		file: 'models/pickup-truck.glb',
+		eye: { x: 0.42, y: 1.62, z: -0.05 },
 		size: { width: 2.27, height: 2.09, length: 5.58 },
 		wheels: [
 			{ key: 'fl', x: 0.86, y: 0.44, z: 1.65, radius: 0.44, front: true },

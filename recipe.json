@@ -33,6 +33,24 @@
 				"essential": true
 			},
 			{
+				"id": "view",
+				"label": "View",
+				"hint": "Behind the car, or from the driver's seat. V swaps them while you drive.",
+				"type": "choice",
+				"options": [
+					{
+						"value": "chase",
+						"label": "Chase"
+					},
+					{
+						"value": "driver",
+						"label": "Driver"
+					}
+				],
+				"default": "chase",
+				"essential": true
+			},
+			{
 				"id": "assists",
 				"label": "Assists",
 				"hint": "ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.",
