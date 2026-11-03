@@ -325,6 +325,7 @@ function reset() {
 	else applyControls();
 	block.state({ ...values });
 	yard.reset();
+	stage.reset();
 	for (const f of figures) f.reset();
 	events.clear();
 	driver.reset();
@@ -514,11 +515,18 @@ function showReadout(now) {
 	readout.abs.classList.toggle('on', values.assists && car.input.brake > 0 && car.wheels.some((w) => w.front && w.slipRatio < -0.13));
 }
 
+/** The car's hit a pole or a board. */
+function snapped(item) {
+	const speed = car.speed;
+	effects.burst(item.x, item.y + 0.4, item.z, 3, 1.5 + speed * 0.1, 0.8, land.surfaceAt(item.x, item.z));
+	sounds.play('wood', Math.min(1, speed / 24), 1.2, 1 - values.slow * 0.75);
+}
+
 function draw(real, scaled, alpha, now) {
 	model.update(scaled, alpha);
 	for (const f of figures) f.update(scaled);
 	yard.update(scaled);
-	if (land === stage) stage.update(real, camera);
+	if (land === stage) stage.update(real, camera, { object: model.object, size: car.size }, snapped);
 	effects.update(car, scaled, camera);
 	view.update(car, model.object.position, real);
 	const o = model.object.position;

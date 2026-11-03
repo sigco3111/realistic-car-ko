@@ -1,5 +1,6 @@
 // What makes it a rally stage and not just a road: boulders from real scans, marker poles down both sides, chevron boards on the
-// outside of the tight corners, and a start gantry over the lane. Nothing stands on the road.
+// outside of the tight corners, and a start gantry over the lane. Nothing stands on the road. Rocks are as solid as they look, and poles
+// and boards snap off when they're hit, so nothing ends up inside the car.
 import {
 	BoxGeometry,
 	CanvasTexture,
@@ -18,8 +19,38 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { place, COURSE_YAW } from './yard.js';
 import { fbm, WORLD } from './stage-shape.js';
+import { keepOutOfCar } from './stage-forest.js';
 
 const up = new Vector3(0, 1, 0);
+
+/** The farthest points of a shape in many directions: a few dozen, for a solid hull that's as big as what's drawn. */
+function outline(geometry) {
+	const at = geometry.attributes.position;
+	const out = [];
+	const seen = new Set();
+	for (let i = 0; i < 9; i++) {
+		const y = -1 + (i + 0.5) / 4.5;
+		const around = Math.sqrt(1 - y * y);
+		for (let j = 0; j < 8; j++) {
+			const a = (j / 8) * 6.283 + i;
+			const dx = Math.cos(a) * around;
+			const dz = Math.sin(a) * around;
+			let best = 0;
+			let far = -Infinity;
+			for (let v = 0; v < at.count; v++) {
+				const d = at.getX(v) * dx + at.getY(v) * y + at.getZ(v) * dz;
+				if (d > far) {
+					far = d;
+					best = v;
+				}
+			}
+			if (seen.has(best)) continue;
+			seen.add(best);
+			out.push(at.getX(best), at.getY(best), at.getZ(best));
+		}
+	}
+	return out;
+}
 
 function chevronTexture() {
 	const canvas = document.createElement('canvas');
@@ -83,6 +114,19 @@ export async function addFurniture({ R, group, shape, solid, light }) {
 		return seed / 4294967296;
 	};
 
+	// What snaps off when the car hits it, by where it stands, to find quickly.
+	const CELL_SIZE = 8;
+	const cells = new Map();
+	const broken = [];
+	const cellOf = (x, z) => (Math.floor((x + WORLD) / CELL_SIZE) << 12) | Math.floor((z + WORLD) / CELL_SIZE);
+	const breakable = (x, z, reach, ...parts) => {
+		const key = cellOf(x, z);
+		if (!cells.has(key)) cells.set(key, []);
+		cells.get(key).push({ x, z, y: shape.heightAt(x, z), reach, parts, kept: [] });
+	};
+	const gone = new Matrix4().makeScale(0, 0, 0);
+	const towards = new Vector3();
+
 	// Boulders, in groups, in the woods and on the rocky ground, and a few big ones by the road.
 	const rocks = await new GLTFLoader().loadAsync('stage/rocks.glb');
 	const pieces = [];
@@ -106,13 +150,18 @@ export async function addFurniture({ R, group, shape, solid, light }) {
 		const here = spots.filter((a) => a.piece === index);
 		if (!here.length) return;
 		piece.material.roughness = 1;
+		if (!piece.material.userData.clear) {
+			piece.material.userData.clear = true;
+			keepOutOfCar(piece.material, 'stage-rock-clear');
+		}
 		const mesh = new InstancedMesh(piece.geometry, piece.material, here.length);
+		const edge = outline(piece.geometry);
 		here.forEach((a, i) => {
 			q.setFromAxisAngle(up, a.yaw);
 			const y = shape.heightAt(a.x, a.z) - a.scale * 0.1;
 			matrix.compose(p.set(a.x, y, a.z), q, s.setScalar(a.scale));
 			mesh.setMatrixAt(i, matrix);
-			if (a.scale > 0.75) solid(R.ColliderDesc.ball(a.scale * 0.42).setTranslation(a.x, y + a.scale * 0.2, a.z));
+			solid(R.ColliderDesc.convexHull(new Float32Array(edge.map((c) => c * a.scale))).setTranslation(a.x, y, a.z).setRotation(q));
 		});
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
@@ -142,6 +191,7 @@ export async function addFurniture({ R, group, shape, solid, light }) {
 		m.castShadow = true;
 		group.add(m);
 	}
+	places.forEach((a, i) => breakable(a.x, a.z, 0.1, [poles, i], [caps, i]));
 
 	// Chevron boards on the outside of the corners, facing the car coming in.
 	const boards = [];
@@ -168,6 +218,7 @@ export async function addFurniture({ R, group, shape, solid, light }) {
 		matrix.compose(p.set(b.x, shape.heightAt(b.x, b.z) - 0.05, b.z), q, s.set(b.flip ? -1 : 1, 1, 1));
 		boardMesh.setMatrixAt(i, matrix);
 		postMesh.setMatrixAt(i, matrix);
+		breakable(b.x, b.z, 0.8, [boardMesh, i], [postMesh, i]);
 	});
 	boardMaterial.side = 2;
 	for (const m of [boardMesh, postMesh]) {
@@ -202,4 +253,55 @@ export async function addFurniture({ R, group, shape, solid, light }) {
 	// Keep three's tidy-up happy about unused imports while staying small.
 	void Color;
 	void RepeatWrapping;
+
+	return {
+		/** Anything the car's touching this frame snaps off. Says what, so there can be a noise and some dust. */
+		update(car, snapped) {
+			const o = car.object;
+			const f = o.getWorldDirection(towards);
+			const long = car.size.length / 2;
+			const wide = car.size.width / 2;
+			const cx = Math.floor((o.position.x + WORLD) / CELL_SIZE);
+			const cz = Math.floor((o.position.z + WORLD) / CELL_SIZE);
+			for (let i = cx - 1; i <= cx + 1; i++) {
+				for (let j = cz - 1; j <= cz + 1; j++) {
+					const here = cells.get((i << 12) | j);
+					if (!here) continue;
+					for (const item of here) {
+						if (item.kept.length || Math.abs(item.y - o.position.y) > 3) continue;
+						const dx = item.x - o.position.x;
+						const dz = item.z - o.position.z;
+						const along = dx * f.x + dz * f.z;
+						const across = dx * f.z - dz * f.x;
+						if (Math.abs(along) > long + item.reach || Math.abs(across) > wide + item.reach) continue;
+						for (const [mesh, index] of item.parts) {
+							const m = new Matrix4();
+							mesh.getMatrixAt(index, m);
+							item.kept.push(m);
+							mesh.setMatrixAt(index, gone);
+							mesh.instanceMatrix.needsUpdate = true;
+						}
+						broken.push(item);
+						snapped(item);
+					}
+				}
+			}
+		},
+		reset() {
+			for (const item of broken) {
+				item.parts.forEach(([mesh, index], i) => {
+					mesh.setMatrixAt(index, item.kept[i]);
+					mesh.instanceMatrix.needsUpdate = true;
+				});
+				item.kept = [];
+			}
+			broken.length = 0;
+		},
+		/** Where things stand, for tools/cabin-check.mjs. */
+		standing() {
+			const items = [...cells.values()].flat();
+			const where = ({ x, z }) => ({ x, z });
+			return { poles: items.filter((a) => a.reach < 0.5).map(where), boards: items.filter((a) => a.reach >= 0.5).map(where), rocks: spots.filter((a) => a.scale > 0.45).map(where) };
+		},
+	};
 }

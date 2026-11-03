@@ -12,11 +12,14 @@
 
 const RPM = 60 / (2 * Math.PI);
 
-/** How each surface grips. `mu` is peak friction, `alpha` and `kappa` the slip angle (rad) and slip ratio at that peak, `falloff` what's left at huge slip. */
+/**
+ * How each surface grips. `mu` is peak friction, `alpha` and `kappa` the slip angle (rad) and slip ratio at that peak, `falloff` what's left at
+ * huge slip, and `scrub` how much harder a tyre going sideways, well past its peak, drags: it ploughs what's under it, so a slide dies.
+ */
 export const SURFACES = {
-	tarmac: { mu: 1.05, alpha: 0.13, kappa: 0.11, falloff: 0.78, rolling: 0.012 },
-	gravel: { mu: 0.68, alpha: 0.24, kappa: 0.2, falloff: 0.88, rolling: 0.03 },
-	grass: { mu: 0.5, alpha: 0.28, kappa: 0.24, falloff: 0.82, rolling: 0.05 },
+	tarmac: { mu: 1.2, alpha: 0.13, kappa: 0.11, falloff: 0.82, scrub: 0.3, rolling: 0.012 },
+	gravel: { mu: 0.86, alpha: 0.24, kappa: 0.2, falloff: 0.9, scrub: 0.4, rolling: 0.03 },
+	grass: { mu: 0.66, alpha: 0.28, kappa: 0.24, falloff: 0.85, scrub: 0.45, rolling: 0.05 },
 };
 
 /** A sensible car, for anything `new Car` isn't told. */
@@ -60,6 +63,9 @@ export const DEFAULTS = {
 	brakeTorque: 2900, // Nm, all four wheels together
 	brakeFront: 0.62,
 	handbrakeTorque: 3200,
+	handbrakeDrag: 0.3, // How much of the foot brake comes on with the handbrake, so holding it stops the car
+	coastBrake: 0.08, // How much of it the engine's worth with nothing pressed below coastSpeed, or rolling against the gear
+	coastSpeed: 5, // m/s
 	// Air
 	dragArea: 0.72, // Drag coefficient times frontal area, m²
 	// Assists
@@ -458,6 +464,10 @@ export class Car {
 		if (this.shifting > 0) throttle = 0;
 		// With nothing pressed at a crawl, it holds still rather than rolling away.
 		if (!input.throttle && !input.brake && Math.abs(this.forwardSpeed) < 0.6) brake = Math.max(brake, 0.25);
+		// Nothing pressed, it dies away rather than rolling on and on: at low revs, where the engine's stopped holding it back, and
+		// rolling backwards in a forward gear after a spin.
+		if (!input.throttle && !input.brake && (Math.abs(this.forwardSpeed) < t.coastSpeed || this.forwardSpeed * this.gear < -0.5)) brake = Math.max(brake, t.coastBrake);
+		if (input.handbrake > 0) brake = Math.max(brake, t.handbrakeDrag);
 
 		// The ground velocity at each tyre, and its slip angle, once per step.
 		for (const w of this.wheels) {
@@ -604,7 +614,8 @@ export class Car {
 			const total = peak * slipCurve(rho, surface.falloff);
 			if (rho > 1e-5) {
 				force = (total * sx) / rho;
-				lateral = (-total * sy) / rho;
+				// Past its peak, sideways, it ploughs.
+				lateral = (-total * sy * (1 + surface.scrub * clamp((Math.abs(sy) - 1) / 2, 0, 1))) / rho;
 			}
 		} else {
 			w.slip = 0;

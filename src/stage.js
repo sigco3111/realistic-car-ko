@@ -469,7 +469,7 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 
 	progress('The trees');
 	await new Promise((go) => setTimeout(go));
-	await addFurniture({ R, group, shape, solid, light });
+	const furniture = await addFurniture({ R, group, shape, solid, light });
 	const forestLife = await addForest({ R, group, shape, maps: { ...maps, splat }, solid, light, loader, renderer, sun: skyInfo.sun });
 	progress('The stage');
 
@@ -509,9 +509,11 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 			group.visible = on;
 			for (const c of colliders) c.setEnabled(on);
 		},
-		update(dt, camera) {
+		/** `car` is what's drawn, `.object` and `.size`: grass lies flat under it, and it snaps what it hits. */
+		update(dt, camera, car, snapped) {
 			skyMesh.position.copy(camera.getWorldPosition(worldCamera));
-			forestLife.update(dt, camera);
+			forestLife.update(dt, camera, car);
+			furniture.update(car, snapped);
 			if (frame++ % 12 === 0) updateLevels(camera);
 		},
 		/** Every piece of every level, so the warm-up can send them all to the GPU. */
@@ -522,7 +524,12 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 			});
 			return out;
 		},
-		reset() {},
+		reset() {
+			furniture.reset();
+		},
+		standing() {
+			return { ...furniture.standing(), trunks: forestLife.standing().map(({ x, z }) => ({ x, z })) };
+		},
 		lower() {
 			forestLife.lower();
 		},

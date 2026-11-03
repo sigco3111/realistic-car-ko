@@ -26,6 +26,7 @@ import {
 	RepeatWrapping,
 	Scene,
 	SRGBColorSpace,
+	Vector2,
 	Vector3,
 	WebGLRenderTarget,
 } from 'three';
@@ -36,6 +37,9 @@ const SPECIES = {
 	aspen: { bark: 'bark-aspen', leaf: 'aspen-leaf', tall: [12, 19] },
 };
 const up = new Vector3(0, 1, 0);
+const ahead = new Vector3();
+// How far a blade can lean from where it grows: what's kept clear round the car, on top of the car.
+const BLADE = 0.3;
 
 /** The wind in the leaves, in a few lines of the vertex shader. */
 function withWind(material, time, key) {
@@ -57,6 +61,31 @@ function withWind(material, time, key) {
 	material.customProgramCacheKey = () => key;
 }
 
+// A trunk stops the car, but a bough doesn't, and a low rock passes under its solid body: what's inside the car isn't drawn.
+const carInverse = { value: new Matrix4() };
+const carMiddle = { value: new Vector3() };
+const carExtent = { value: new Vector3() };
+export function keepOutOfCar(material, key) {
+	const before = material.onBeforeCompile;
+	material.onBeforeCompile = (shader, renderer) => {
+		before.call(material, shader, renderer);
+		Object.assign(shader.uniforms, { carInverse, carMiddle, carExtent });
+		shader.vertexShader = shader.vertexShader
+			.replace('#include <common>', '#include <common>\nuniform mat4 carInverse;\nvarying vec3 vInCar;')
+			.replace('#include <project_vertex>', `#include <project_vertex>
+				#ifdef USE_INSTANCING
+					vInCar = (carInverse * modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+				#else
+					vInCar = vec3(1e4);
+				#endif`);
+		shader.fragmentShader = shader.fragmentShader
+			.replace('#include <common>', '#include <common>\nuniform vec3 carMiddle, carExtent;\nvarying vec3 vInCar;')
+			.replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+				if (all(lessThan(abs(vInCar - carMiddle), carExtent))) discard;`);
+	};
+	material.customProgramCacheKey = () => key;
+}
+
 export async function addForest({ R, group, shape, maps, solid, light, loader, renderer, sun }) {
 	const [meta, bin] = await Promise.all([fetch('stage/trees.json').then((r) => r.json()), fetch('stage/trees.bin').then((r) => r.arrayBuffer())]);
 	const time = { value: 0 };
@@ -73,6 +102,8 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 		const barkMaterial = new MeshStandardMaterial({ map: bark, roughness: 0.95 });
 		const leafMaterial = new MeshStandardMaterial({ map: leaf, roughness: 0.82, alphaTest: 0.45, side: DoubleSide });
 		withWind(leafMaterial, time, `stage-leaf`);
+		keepOutOfCar(barkMaterial, 'stage-bark-clear');
+		keepOutOfCar(leafMaterial, 'stage-leaf-clear');
 		const geometryOf = (part) => {
 			const g = new BufferGeometry();
 			const read = (Type, slot) => new Type(bin, slot.at, slot.length);
@@ -223,6 +254,9 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 
 	// Grass.
 	const COUNT = light ? 22000 : 110000;
+	const carAt = { value: new Vector3() };
+	const carAxis = { value: new Vector2(0, 1) };
+	const carHalf = { value: new Vector2(1, 2) };
 	const SPAN = light ? 56 : 100;
 	const heightData = new Uint16Array(SIZE * SIZE);
 	for (let i = 0; i < heightData.length; i++) heightData[i] = DataUtils.toHalfFloat(shape.heights[i]);
@@ -251,7 +285,7 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 	grassGeometry.instanceCount = COUNT;
 	const grassMaterial = new MeshStandardMaterial({ roughness: 0.9, side: DoubleSide });
 	grassMaterial.onBeforeCompile = (shader) => {
-		Object.assign(shader.uniforms, { tHeight: { value: heightMap }, tSplat: { value: maps.splat }, tGrass: { value: maps.grass }, grassSpan: { value: SPAN }, landSpan: { value: WORLD * 2 }, windTime: time, landCell: { value: (WORLD * 2) / (SIZE - 1) } });
+		Object.assign(shader.uniforms, { tHeight: { value: heightMap }, tSplat: { value: maps.splat }, tGrass: { value: maps.grass }, grassSpan: { value: SPAN }, landSpan: { value: WORLD * 2 }, windTime: time, landCell: { value: (WORLD * 2) / (SIZE - 1) }, carAt, carAxis, carHalf });
 		shader.vertexShader = shader.vertexShader
 			.replace(
 				'#include <common>',
@@ -260,6 +294,8 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 				attribute float aShade;
 				uniform sampler2D tHeight, tSplat, tGrass;
 				uniform float grassSpan, landSpan, windTime, landCell;
+				uniform vec3 carAt;
+				uniform vec2 carAxis, carHalf;
 				varying vec3 vBlade;`,
 			)
 			.replace(
@@ -270,6 +306,10 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 				float grows = textureLod(tSplat, spotUv, 0.0).r;
 				float ring = 1.0 - smoothstep(grassSpan * 0.32, grassSpan * 0.5, length(local));
 				float tall = smoothstep(0.25, 0.5, grows) * ring * (0.22 + aSeed.z * 0.42);
+				// Flat under the car, whichever way it's facing, with room for a blade's lean. carAt.z is 0 once it's flown clear of the grass.
+				vec2 fromCar = spot - carAt.xy;
+				vec2 outside = abs(vec2(dot(fromCar, carAxis), dot(fromCar, vec2(-carAxis.y, carAxis.x)))) - carHalf;
+				tall *= mix(1.0, smoothstep(0.0, 0.3, length(max(outside, 0.0))), carAt.z);
 				float turn = aSeed.z * 6.283;
 				vec3 turned = vec3(position.x * cos(turn) - position.z * sin(turn), position.y * tall, position.x * sin(turn) + position.z * cos(turn));
 				turned.xz *= smoothstep(0.0, 0.08, tall);
@@ -329,9 +369,25 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 
 	return {
 		count: { pine: planted.pine.length, aspen: planted.aspen.length, grass: COUNT },
-		update(dt, camera) {
+		/** Where the trunks stand. */
+		standing() {
+			return [...planted.pine, ...planted.aspen];
+		},
+		update(dt, camera, car) {
 			time.value += dt;
 			assign(camera);
+			if (car) {
+				const o = car.object;
+				const f = o.getWorldDirection(ahead);
+				const flat = Math.hypot(f.x, f.z) || 1;
+				carAxis.value.set(f.x / flat, f.z / flat);
+				carHalf.value.set(car.size.length / 2 + BLADE, car.size.width / 2 + BLADE);
+				const above = o.position.y - shape.heightAt(o.position.x, o.position.z);
+				carAt.value.set(o.position.x, o.position.z, 1 - Math.min(1, Math.max(0, (above - 1.6) / 0.8)));
+				carInverse.value.copy(o.matrixWorld).invert();
+				carMiddle.value.set(0, car.size.height / 2, 0);
+				carExtent.value.set(car.size.width / 2 + 0.05, car.size.height / 2 + 0.05, car.size.length / 2 + 0.05);
+			}
 		},
 		lower() {
 			grassGeometry.instanceCount = Math.floor(COUNT / 2);
