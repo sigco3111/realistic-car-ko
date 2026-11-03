@@ -13,6 +13,8 @@ Code here is MIT, art and sound are CC0, except the stage's trees and leaves, wh
 
 ## Use it in a game
 
+Start from the files below rather than `src/demo.js`. The demo is the yard, with its crates, ramps and mannequins (`yard.js`, `stage*.js`, `mannequin.js`, `stage-furniture.js`), and it talks to Patch's page through `patch-block`, which a game doesn't need. Your game supplies its own ground and scene. The car's physics and model also run on WebGPU, under `patch/forests`: Patch's guide has that recipe.
+
 Copy `src/car.js`, which only needs Rapier, plus `src/car-model.js` and `src/view.js` if you use three.js. Your model's front must face +Z with the ground at y = 0, and its wheels must be separate nodes. **Step at 120 Hz.**
 
 ```js
