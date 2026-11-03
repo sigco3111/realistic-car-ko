@@ -91,6 +91,17 @@ A 3.4 km loop round the open yard, with 1.1 km sealed and 2.3 km of gravel, hair
 - **Nothing ends up inside the car.** Grass lies flat under it, rocks are as solid as they look, poles and boards snap off when hit and come back on Reset, and any bough or low rock inside the car's box isn't drawn. `tools/cabin-check.mjs` counts what the land draws over solid car, from the seat and from above.
 - **A weak card** gets lighter models, a quarter of the triangles (about 0.9 million at most), less grass, fewer rocks and simpler shaders, then fewer pixels and a smaller shadow if it still can't keep up.
 
+## The sound
+
+Real recordings only, all CC0, listed in `public/audio/CREDITS.txt`. `tools/sound-spec.py` says which recording each sound is cut from, so swapping one is a line there, then `python -I tools/fetch-sounds.py <id>` and `python -I tools/make-sounds.py`.
+
+- **Engines** are loops at steady revs, faded from one to the next and pitched by the car's real revs. Most are cut from a pull up the revs on a dyno, bent to hold one pitch (`tools/sound_track.py`). Lifting off muffles and quietens them, and the rally cars spit a little.
+- **Under the car,** road noise, gravel, squeal and wind follow speed and slip.
+- **Hits** are chosen by what was hit and how hard, never the same one twice running, with the car's own body in there too.
+- **From the seat,** what's outside is muffled and the engine's nearer.
+
+`tools/make-sounds.py` reports levels, clipping and each loop's join. `tools/sound-check.mjs` measures the mix as the game plays it. Neither can say whether it sounds good: that's for ears.
+
 ## How it measures up
 
 Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
@@ -123,7 +134,8 @@ How far a slide carries, by `node tools/slide-bench.mjs vireo`:
 - **The surface is looked up by you.** `surfaceAt` is called four times a step, so keep it cheap.
 - **Wheels clip the arches** on the hardest landings (`bump` and `droop` on `CarModel`).
 - **On a keyboard, steering is all or nothing.** The assists make up for that; with them off it's hard work, on purpose. A gamepad's analogue input isn't wired up in the demo.
-- **No engine or tyre sound yet.** The demo only has impacts.
+- **The engines are cut from what could be found.** There's no real recording of the Vireo, and the rally car shares its engine. Low revs fade between two recordings, and the pickup has only two steady notes, so it's stretched furthest.
+- **Off-throttle is the same recording, muffled and quieter**, not a recording of a car on overrun.
 - **The handbrake isn't pure.** A real one only holds the rears; here a little foot brake comes on with it, so holding it stops the car.
 - **A snapped pole just goes.** Nothing flies off, there's only some dust.
 - **The light build hasn't been played on a real laptop.** Its load has been measured, on a fast card with the processor slowed, by `tools/laptop-check.mjs`.
@@ -143,6 +155,9 @@ How far a slide carries, by `node tools/slide-bench.mjs vireo`:
 | `src/stage-shape.js`, `src/stage.js`, `src/stage-forest.js`, `src/stage-furniture.js` | The rally stage: its shape, land and road, trees and grass, rocks and poles |
 | `tools/stage-drive.mjs`, `tools/stage-check.mjs` | Laps the stage on autopilot, and checks its land against its road |
 | `tools/cabin-check.mjs` | Counts anything on the ground drawn inside the car |
+| `src/sound.js`, `tools/sound-spec.py`, `tools/make-sounds.py`, `tools/fetch-sounds.py`, `tools/sound_track.py`, `tools/sound-check.mjs` | The sound, where it comes from and its checks |
+| `tools/make-board.py` | A local page of every sound and alternatives, for judging by ear |
+| `tools/vibe-check.mjs` | How much the seat shakes, by surface, and where the worst jolts are |
 | `tools/slide-bench.mjs` | How far slides and handbrake stops carry, on each surface |
 | `tools/laptop-check.mjs` | The load on the card, and a first load with the processor slowed |
 | `tools/mark-check.mjs` | Checks tyre marks stay where they were laid: `node tools/mark-check.mjs <demo url>` |

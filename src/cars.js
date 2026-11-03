@@ -3,6 +3,8 @@
 export const CARS = {
 	vireo: {
 		label: 'Vireo rally',
+		engine: 'rally',
+		turbo: true,
 		file: 'models/vireo-rally.glb',
 		// For a weak card: the same rig with 25,000 triangles instead of 66,000, and smaller pictures.
 		light: 'models/vireo-rally-lod.glb',
@@ -52,6 +54,8 @@ export const CARS = {
 	},
 	rally: {
 		label: 'Rally car',
+		engine: 'rally',
+		turbo: true,
 		file: 'models/rally-car.glb',
 		eye: { x: 0.36, y: 1.14, z: -0.5 },
 		size: { width: 1.94, height: 1.49, length: 4.31 },
@@ -82,6 +86,7 @@ export const CARS = {
 	},
 	muscle: {
 		label: 'Muscle car',
+		engine: 'muscle',
 		file: 'models/muscle-car.glb',
 		eye: { x: 0.38, y: 1.05, z: -0.62 },
 		size: { width: 2.07, height: 1.27, length: 5.02 },
@@ -119,6 +124,7 @@ export const CARS = {
 	},
 	pickup: {
 		label: 'Pickup',
+		engine: 'pickup',
 		file: 'models/pickup-truck.glb',
 		eye: { x: 0.42, y: 1.62, z: -0.05 },
 		size: { width: 2.27, height: 2.09, length: 5.58 },

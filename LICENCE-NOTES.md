@@ -14,7 +14,7 @@
 | Rally car, muscle car, pickup | Patch, from the lab's approved models, textures shrunk (`make-models.mjs`) | CC0 | `public/models/` |
 | The mannequin | Patch's 1.8 m scale figure, at about 2,800 triangles, the same build as the crowds block | CC0, Patch | `public/models/mannequin.glb` |
 | The mannequin's clips | [Quaternius, Universal Animation Library 1 and 2](https://quaternius.com/packs/universalanimationlibrary.html), retargeted | CC0 | in `mannequin.glb` |
-| Impact sounds | [Kenney, Impact Sounds](https://kenney.nl/assets/impact-sounds), from Patch's mirror, unedited | CC0 | `public/audio/` |
+| Every sound | Real recordings from [Freesound](https://freesound.org), each one's licence read from its own page by `tools/fetch-sounds.py`, cut, looped and levelled by `tools/make-sounds.py` from the 128 kbps previews. Each file's source and author is in `public/audio/CREDITS.txt` | CC0 | `public/audio/` |
 | The Car choice's pictures | stills of this demo (`make-thumbs.mjs`) | CC0, Patch | `thumbs/cars/` |
 | The stage's road and land, its shape, grass, poles, boards and gantry, and the banners' made-up names | Patch | MIT, © 2026 Patch | `src/stage*.js` |
 | Road gravel | [Forest Ground 04](https://polyhaven.com/a/forest_ground_04) by Rob Tuytel and Rico Cilliers, Poly Haven, shrunk | CC0 | `public/stage/gravel-*.webp` |

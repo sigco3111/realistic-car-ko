@@ -268,10 +268,16 @@ function makeCar(id) {
 	car.base = { ...car.tune, hertz: [...car.tune.hertz] };
 	car.on('stuck', () => car.flip());
 	car.on('land', (speed) => {
+		if (speed < 1.5) return;
+		sounds.play('land', Math.min(1, speed / 7), 1, 1 - values.slow * 0.75);
 		if (speed < 3) return;
 		effects.burst(car.position.x, car.position.y + 0.3, car.position.z, Math.min(14, Math.floor(speed * 1.5)), 2 + speed * 0.3, 1.6, land.surfaceAt(car.position.x, car.position.z));
-		sounds.play('heavy', Math.min(1, speed / 9), 0.62, 1 - values.slow * 0.75);
 	});
+	car.on('shift', () => {
+		const strength = 0.35 + car.input.throttle * 0.35;
+		sounds.play('gear', strength, 1, 1 - values.slow * 0.75);
+	});
+	sounds.useEngine(CARS[id].engine);
 	applyControls();
 	model = models[id];
 	model.object.visible = true;
@@ -307,6 +313,7 @@ function applyView() {
 	}
 	const inside = values.view === 'driver';
 	model.showInside(inside);
+	sounds.setInside(inside);
 	effects.clearAround = inside;
 	if (inside) driver.seat(model, eye);
 	else if (view === driver) chase.jump(car);
@@ -435,6 +442,27 @@ function knock(figure, v, speed) {
 	}
 }
 
+/** What the car's run into, by the look of it. */
+function materialAgainst(event) {
+	const one = world.getCollider(event.collider1());
+	const two = world.getCollider(event.collider2());
+	const other = one?.parent()?.handle === car.body.handle ? two : one;
+	const body = other?.parent();
+	const loose = body && yard.kindOf(body);
+	if (loose) return loose;
+	const T = RAPIER.ShapeType;
+	switch (other?.shape.type) {
+		case T.Cylinder:
+			return 'wood';
+		case T.ConvexPolyhedron:
+		case T.HeightField:
+		case T.TriMesh:
+			return 'rock';
+		default:
+			return 'metal';
+	}
+}
+
 function readEvents() {
 	const rate = 1 - values.slow * 0.75;
 	events.drainCollisionEvents((a, b, started) => {
@@ -448,7 +476,7 @@ function readEvents() {
 			const speed = speedOf(body);
 			if (body.handle === car.body.handle ? speed > 1.5 : speed > 3.5) {
 				knock(figure, body.linvel(), speed);
-				sounds.play('plate', Math.min(1, speed / 22), 0.7, rate);
+				sounds.play('figure', Math.min(1, speed / 22), 1, rate);
 			}
 			return;
 		}
@@ -461,14 +489,21 @@ function readEvents() {
 	});
 	events.drainContactForceEvents((event) => {
 		const force = event.maxForceMagnitude() / car.tune.mass;
+		const kind = materialAgainst(event);
+		// Going on while it's moving, it's dragging along whatever that is.
+		if (force > 6 && kind !== 'wood') sounds.scrape(Math.min(1, force / 60));
 		if (force < 30) return;
 		const strength = Math.min(1, force / 260);
-		sounds.play('heavy', strength, 0.8, rate);
+		sounds.play(kind, strength, 1, rate);
+		// Whatever it hit, its own body takes the hit too.
+		if (kind !== 'metal') sounds.play('metal', strength * 0.55, 0.9, rate);
 		view.kick(Math.min(0.3, strength * 0.4));
 	});
 }
 
 // Each frame: fixed steps of the world, slow motion by making them smaller, and the picture between the last two.
+const now = () => performance.now();
+let thumped = 0;
 function stepWorld() {
 	const dt = STEP * (1 - values.slow);
 	world.timestep = dt;
@@ -485,6 +520,13 @@ function stepWorld() {
 	world.step(events);
 	car.afterStep(dt);
 	readEvents();
+	// A wheel taking a sudden hit, going over something sharp.
+	for (const w of car.wheels) {
+		if (w.inContact && w.dampSpeed > 1 && now() - thumped > 260) {
+			thumped = now();
+			sounds.play('thump', Math.min(1, (w.dampSpeed - 0.6) / 2), 1, 1 - values.slow * 0.75);
+		}
+	}
 	model.stepped();
 	// Loose ground slowly dirties a car that shows it: a few hundred metres to go from washed to filthy.
 	const grime = dirt[values.car];
@@ -520,7 +562,7 @@ function showReadout(now) {
 function snapped(item) {
 	const speed = car.speed;
 	effects.burst(item.x, item.y + 0.4, item.z, 3, 1.5 + speed * 0.1, 0.8, land.surfaceAt(item.x, item.z));
-	sounds.play('wood', Math.min(1, speed / 24), 1.2, 1 - values.slow * 0.75);
+	sounds.play('snap', 0.35 + Math.min(0.65, speed / 30), 1, 1 - values.slow * 0.75);
 }
 
 function draw(real, scaled, alpha, now) {
@@ -529,6 +571,7 @@ function draw(real, scaled, alpha, now) {
 	yard.update(scaled);
 	if (land === stage) stage.update(real, camera, { object: model.object, size: car.size }, snapped);
 	effects.update(car, scaled, camera);
+	sounds.update(car, real, 1 - values.slow * 0.75);
 	view.update(car, model.object.position, real);
 	const o = model.object.position;
 	sun.target.position.set(o.x, o.y, o.z);
@@ -605,6 +648,7 @@ app = {
 	held,
 	renderer,
 	script: null,
+	sounds,
 	stepWorld,
 	lowest,
 	reset,

@@ -32,8 +32,8 @@ The mannequin
   https://quaternius.com/packs/universalanimationlibrary.html
 
 The sounds
-  Kenney, Impact Sounds, CC0 1.0
-  https://kenney.nl/assets/impact-sounds
+  Real recordings from Freesound (https://freesound.org), all CC0 1.0, cut and levelled by Patch.
+  Every recording and its author is listed in audio/CREDITS.txt.
 
 The rally stage's ground, sky and rocks, all CC0 1.0, from Poly Haven (https://polyhaven.com)
   Road gravel: Forest Ground 04, Rob Tuytel and Rico Cilliers

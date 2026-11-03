@@ -197,8 +197,8 @@
 		{
 			"files": "audio/",
 			"license": "CC0-1.0",
-			"source": "https://kenney.nl/assets/impact-sounds",
-			"author": "Kenney (Impact Sounds)"
+			"source": "https://freesound.org",
+			"author": "Recordings from Freesound, by the people listed in audio/CREDITS.txt"
 		},
 		{
 			"files": "thumbs/",

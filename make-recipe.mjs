@@ -72,7 +72,7 @@ const recipe = {
 		{ files: 'assets/', license: 'Apache-2.0', source: 'https://github.com/dimforge/rapier.js', author: 'Dimforge (Rapier, the physics)' },
 		{ files: 'assets/', license: 'MIT', source: 'https://github.com/mrdoob/three.js', author: 'three.js authors' },
 		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the Vireo, rally car, muscle car, pickup and mannequin)' },
-		{ files: 'audio/', license: 'CC0-1.0', source: 'https://kenney.nl/assets/impact-sounds', author: 'Kenney (Impact Sounds)' },
+		{ files: 'audio/', license: 'CC0-1.0', source: 'https://freesound.org', author: 'Recordings from Freesound, by the people listed in audio/CREDITS.txt' },
 		{ files: 'thumbs/', license: 'CC0-1.0', author: 'Patch (stills of this demo)' },
 		{ files: 'stage/*-diff.webp', license: 'CC0-1.0', source: 'https://polyhaven.com', author: 'Poly Haven: Rob Tuytel, Rico Cilliers, Charlotte Baglioni (the stage\'s ground)' },
 		{ files: 'stage/*-nor.webp', license: 'CC0-1.0', source: 'https://polyhaven.com', author: 'Poly Haven: Rob Tuytel, Rico Cilliers, Charlotte Baglioni (the stage\'s ground)' },
