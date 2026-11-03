@@ -2,7 +2,7 @@
 // the camera src/view.js; the yard, the mannequins and the marks on the ground are src/yard.js, src/mannequin.js and
 // src/effects.js. Patch's block page steers it through Patch's block demo helper (lib/patch-block.js), with its controls
 // in recipe.json.
-import { ACESFilmicToneMapping, BackSide, DirectionalLight, Fog, HemisphereLight, Mesh, PCFShadowMap, PerspectiveCamera, PMREMGenerator, Scene, ShaderMaterial, SphereGeometry, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, BackSide, DirectionalLight, Fog, Group, HemisphereLight, Mesh, PCFShadowMap, PerspectiveCamera, PMREMGenerator, Scene, ShaderMaterial, SphereGeometry, Vector3, WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { patchBlock } from 'patch-block';
 import { block as recipeBlock } from '../recipe.json';
@@ -15,7 +15,8 @@ import { Mannequin, prepareMannequin } from './mannequin.js';
 import { Sounds } from './sound.js';
 import { DRIVER_FOV, DRIVER_NEAR, DriverView } from './driver-view.js';
 import { ChaseView } from './view.js';
-import { buildYard, COURSE_YAW, place, YARD } from './yard.js';
+import { buildStage } from './stage.js';
+import { buildYard, COURSE_YAW, place } from './yard.js';
 
 const params = new URLSearchParams(location.search);
 const STEP = 1 / 120;
@@ -42,6 +43,7 @@ const defaults = Object.fromEntries(recipeBlock.controls.map((c) => [c.id, c.def
 const values = { ...defaults };
 if (params.get('car')) defaults.car = values.car = params.get('car');
 if (params.get('view')) defaults.view = values.view = params.get('view');
+if (params.get('map')) defaults.map = values.map = params.get('map');
 
 let app = null;
 let paused = false;
@@ -125,7 +127,8 @@ const pmrem = new PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(reflected, 0.02).texture;
 scene.environmentIntensity = 0.55;
 pmrem.dispose();
-scene.add(new HemisphereLight('#c6d8ea', '#8d6a42', 0.75));
+const hemisphere = new HemisphereLight('#c6d8ea', '#8d6a42', 0.75);
+scene.add(hemisphere);
 const sun = new DirectionalLight('#ffd3a0', 3.1);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -137,7 +140,9 @@ scene.add(sun, sun.target);
 const SUN_FROM = { x: -70, y: 74, z: 44 };
 
 // The sky.
-scene.add(
+const yardSky = new Group();
+scene.add(yardSky);
+yardSky.add(
 	new Mesh(
 		new SphereGeometry(1200, 24, 12),
 		new ShaderMaterial({
@@ -178,6 +183,36 @@ block.progress?.(0.5, 'Building the yard');
 await breathe();
 
 const yard = buildYard(RAPIER, world, scene, GROUPS);
+block.progress?.(0.52, 'Building the stage');
+await breathe();
+const stage = await buildStage(RAPIER, world, scene, GROUPS, { light: weakCard, renderer, progress: (words) => block.progress?.(0.56, words) });
+await breathe();
+// The two maps share the open space's ramps and loose things and mannequins. What's different is here.
+const yardLook = { environment: scene.environment, environmentIntensity: scene.environmentIntensity, sun: new Vector3(SUN_FROM.x, SUN_FROM.y, SUN_FROM.z).normalize(), sunColour: sun.color.getStyle(), sunIntensity: sun.intensity, hemisphere: { sky: '#c6d8ea', ground: '#8d6a42', intensity: 0.75 }, fog: { colour: '#e7bd8d', near: 170, far: 620 }, far: 1400 };
+let land = yard;
+let landLook = yardLook;
+function applyMap() {
+	const isStage = values.map !== 'yard';
+	land = isStage ? stage : yard;
+	landLook = isStage ? stage : yardLook;
+	yard.setActive(!isStage);
+	stage.setActive(isStage);
+	yardSky.visible = !isStage;
+	scene.environment = landLook.environment;
+	scene.environmentIntensity = landLook.environmentIntensity;
+	sun.color.setStyle(landLook.sunColour);
+	sun.intensity = landLook.sunIntensity;
+	hemisphere.color.set(landLook.hemisphere.sky);
+	hemisphere.groundColor.set(landLook.hemisphere.ground);
+	hemisphere.intensity = landLook.hemisphere.intensity;
+	scene.fog.color.set(landLook.fog.colour);
+	scene.fog.near = landLook.fog.near;
+	scene.fog.far = landLook.fog.far;
+	camera.far = landLook.far;
+	camera.updateProjectionMatrix();
+	effects.heightAt = land.heightAt;
+	if (chase) chase.groundAt = land.heightAt;
+}
 sounds = new Sounds();
 await sounds.load().catch(() => {});
 const startSound = () => sounds.start();
@@ -229,12 +264,12 @@ function makeCar(id) {
 	if (car) car.dispose();
 	if (model) model.object.visible = false;
 	const m = measured[id];
-	car = new Car(RAPIER, world, { ...specOf(id), wheels: m.wheels, size: CARS[id].bodySize ?? m.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: yard.surfaceAt });
+	car = new Car(RAPIER, world, { ...specOf(id), wheels: m.wheels, size: CARS[id].bodySize ?? m.size, position: START, yaw: COURSE_YAW, groups: { body: GROUPS.body, bumper: GROUPS.bumper }, surfaceAt: (x, z) => land.surfaceAt(x, z) });
 	car.base = { ...car.tune, hertz: [...car.tune.hertz] };
 	car.on('stuck', () => car.flip());
 	car.on('land', (speed) => {
 		if (speed < 3) return;
-		effects.burst(car.position.x, 0.3, car.position.z, Math.min(14, Math.floor(speed * 1.5)), 2 + speed * 0.3, 1.6, yard.surfaceAt(car.position.x, car.position.z));
+		effects.burst(car.position.x, car.position.y + 0.3, car.position.z, Math.min(14, Math.floor(speed * 1.5)), 2 + speed * 0.3, 1.6, land.surfaceAt(car.position.x, car.position.z));
 		sounds.play('heavy', Math.min(1, speed / 9), 0.62, 1 - values.slow * 0.75);
 	});
 	applyControls();
@@ -283,7 +318,9 @@ function applyView() {
 
 function reset() {
 	const wasCar = values.car;
+	const wasMap = values.map;
 	Object.assign(values, defaults);
+	if (wasMap !== values.map) applyMap();
 	if (wasCar !== values.car) makeCar(values.car);
 	else applyControls();
 	block.state({ ...values });
@@ -380,6 +417,7 @@ makeCar(values.car);
 chase = view = new ChaseView(camera, car);
 chase.reset(car);
 driver = new DriverView(camera);
+applyMap();
 applyView();
 
 /** A figure's been reached: it lets go, moving with whatever hit it and lifted a little by the bumper. The rest is contact. */
@@ -392,7 +430,7 @@ function knock(figure, v, speed) {
 		const spinOf = () => (Math.random() - 0.5) * Math.min(10, speed);
 		figure.shove({ x: 0, y: 0, z: 0 }, { x: spinOf(), y: spinOf(), z: spinOf() });
 		const p = figure.mesh.position;
-		effects.burst(p.x, 0.3, p.z, 4, 2, 1.1, yard.surfaceAt(p.x, p.z));
+		effects.burst(p.x, p.y + 0.3, p.z, 4, 2, 1.1, land.surfaceAt(p.x, p.z));
 	}
 }
 
@@ -449,7 +487,7 @@ function stepWorld() {
 	// Loose ground slowly dirties a car that shows it: a few hundred metres to go from washed to filthy.
 	const grime = dirt[values.car];
 	if (grime && car.wheels[2].inContact && car.wheels[2].surface !== 'tarmac') grime.value = Math.min(1, grime.value + (Math.abs(car.forwardSpeed) * dt) / 450);
-	if (car.position.y < -8 || Math.abs(car.position.x) > YARD + 30 || Math.abs(car.position.z) > YARD + 30) car.moveTo(START, COURSE_YAW);
+	if (car.position.y < land.heightAt(car.position.x, car.position.z) - 8 || Math.abs(car.position.x) > land.bounds || Math.abs(car.position.z) > land.bounds) car.moveTo(START, COURSE_YAW);
 	return dt;
 }
 
@@ -480,10 +518,12 @@ function draw(real, scaled, alpha, now) {
 	model.update(scaled, alpha);
 	for (const f of figures) f.update(scaled);
 	yard.update(scaled);
+	if (land === stage) stage.update(real, camera);
 	effects.update(car, scaled, camera);
 	view.update(car, model.object.position, real);
-	sun.target.position.set(model.object.position.x, 0, model.object.position.z);
-	sun.position.set(model.object.position.x + SUN_FROM.x, SUN_FROM.y, model.object.position.z + SUN_FROM.z);
+	const o = model.object.position;
+	sun.target.position.set(o.x, o.y, o.z);
+	sun.position.set(o.x + landLook.sun.x * 110, o.y + landLook.sun.y * 110, o.z + landLook.sun.z * 110);
 	showReadout(now);
 	renderer.render(scene, camera);
 }
@@ -498,6 +538,7 @@ function lowest() {
 	renderer.shadowMap.needsUpdate = true;
 	shadowEveryOther = true;
 	yard.lower();
+	stage.lower();
 }
 
 let slowTime = 0;
@@ -536,6 +577,11 @@ function frame(now) {
 
 app = {
 	world,
+	RAPIER,
+	stage,
+	get land() {
+		return land;
+	},
 	get view() {
 		return view;
 	},
@@ -565,6 +611,11 @@ app = {
 			makeCar(value);
 			placeCar();
 			applyView();
+		} else if (id === 'map') {
+			applyMap();
+			yard.reset();
+			for (const f of figures) f.reset();
+			placeCar();
 		} else if (id === 'view') applyView();
 		else if (id !== 'slow') applyControls();
 	},
@@ -583,6 +634,15 @@ block.progress?.(0.75, 'Preparing the pictures');
 await breathe();
 const gl = renderer.getContext();
 for (const id of ids) models[id].object.visible = true;
+stage.group.visible = true;
+yard.group.visible = true;
+yardSky.visible = true;
+const stagePieces = stage.allPieces();
+const wasDrawn = stagePieces.map((o) => [o, o.visible, o.frustumCulled]);
+for (const o of stagePieces) {
+	o.visible = true;
+	o.frustumCulled = false;
+}
 effects.burst(0, 0.5, 0, 4, 1, 1, 'gravel');
 effects.update(car, STEP, camera);
 scene.traverse((o) => {
@@ -593,11 +653,14 @@ scene.traverse((o) => {
 await renderer.compileAsync(scene, camera);
 block.progress?.(0.88, 'Preparing the pictures');
 await breathe();
-sun.target.position.set(0, 0, 0);
-sun.position.set(SUN_FROM.x, SUN_FROM.y, SUN_FROM.z);
 renderer.render(scene, camera);
 await breathe();
 for (const id of ids) models[id].object.visible = id === values.car;
+for (const [o, visible, culled] of wasDrawn) {
+	o.visible = visible;
+	o.frustumCulled = culled;
+}
+applyMap();
 figures[0].reset();
 yard.reset();
 effects.reset();

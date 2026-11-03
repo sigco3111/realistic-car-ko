@@ -1,6 +1,6 @@
 // The demo's yard, all made in code: a concrete lot at the end of the day, shipping containers round it, a curved ramp,
 // stacks of crates, drums and cones. Nothing here is part of the car: a game brings its own world.
-import { BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, IcosahedronGeometry, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, Quaternion, RepeatWrapping, SRGBColorSpace, Vector3 } from 'three';
+import { BoxGeometry, Group, CanvasTexture, Color, ConeGeometry, CylinderGeometry, BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, IcosahedronGeometry, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, Quaternion, RepeatWrapping, SRGBColorSpace, Vector3 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
@@ -343,11 +343,19 @@ class Loose {
 
 export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	const R = RAPIER;
-	const fixed = (desc) => world.createCollider(desc.setCollisionGroups(groups.solid).setFriction(0.5).setRestitution(0.1));
+	// What's the yard's own, drawn and solid, apart from the ramps and loose things, which the stage's open space shares.
+	const only = new Group();
+	scene.add(only);
+	const ownColliders = [];
+	const fixed = (desc) => {
+		const c = world.createCollider(desc.setCollisionGroups(groups.solid).setFriction(0.5).setRestitution(0.1));
+		ownColliders.push(c);
+		return c;
+	};
 	const yawQ = (yaw) => ({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) });
 
 	// The ground
-	world.createCollider(R.ColliderDesc.cuboid(YARD + 60, 1, YARD + 60).setTranslation(0, -1, 0).setFriction(0.5).setCollisionGroups(groups.solid));
+	ownColliders.push(world.createCollider(R.ColliderDesc.cuboid(YARD + 60, 1, YARD + 60).setTranslation(0, -1, 0).setFriction(0.5).setCollisionGroups(groups.solid)));
 	const paint = groundPaint();
 	const ground = new Mesh(new PlaneGeometry(YARD * 2 + 900, YARD * 2 + 900), new MeshStandardMaterial({ map: groundGrain(), roughness: 0.93, metalness: 0 }));
 	ground.material.onBeforeCompile = (shader) => {
@@ -377,7 +385,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	ground.material.customProgramCacheKey = () => 'yard-ground';
 	ground.rotation.x = -Math.PI / 2;
 	ground.receiveShadow = true;
-	scene.add(ground);
+	only.add(ground);
 
 	// Containers round the outside, two high in places, in faded colours.
 	const containerGeometry = new BoxGeometry(1, 1, 1);
@@ -414,7 +422,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	containerMesh.castShadow = true;
 	containerMesh.receiveShadow = true;
 	containerMesh.frustumCulled = false;
-	scene.add(containerMesh);
+	only.add(containerMesh);
 	// Nothing leaves the yard, however good the jump.
 	for (const [x, z, hx, hz] of [[0, -YARD - 3, YARD + 6, 2], [0, YARD + 3, YARD + 6, 2], [-YARD - 3, 0, 2, YARD + 6], [YARD + 3, 0, 2, YARD + 6]]) fixed(R.ColliderDesc.cuboid(hx, 40, hz).setTranslation(x, 40, z));
 
@@ -442,7 +450,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 		for (const t of [crowns, trunks]) {
 			t.frustumCulled = false;
 			t.castShadow = true;
-			scene.add(t);
+			only.add(t);
 		}
 	}
 
@@ -502,7 +510,7 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 		grass.count = i;
 		grass.frustumCulled = false;
 		grass.receiveShadow = true;
-		scene.add(grass);
+		only.add(grass);
 		grassMesh = grass;
 	}
 
@@ -598,6 +606,14 @@ export function buildYard(RAPIER, world, scene, groups, quality = {}) {
 	for (const it of coneItems) kinds.set(it.body.handle, 'plate');
 
 	return {
+		name: 'yard',
+		bounds: YARD + 30,
+		heightAt: () => 0,
+		group: only,
+		setActive(on) {
+			only.visible = on;
+			for (const c of ownColliders) c.setEnabled(on);
+		},
 		surfaceAt,
 		update(dt = 0) {
 			windTime.value += dt;

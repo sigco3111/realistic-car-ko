@@ -27,7 +27,7 @@ class Ribbon {
 	}
 
 	/** Adds a point if the tyre's moved on enough, or leaves a gap if `on` is false. */
-	add(x, y, z, sideX, sideZ, alpha, on) {
+	add(x, y, z, sideX, sideY, sideZ, alpha, on) {
 		if (!on) {
 			this.joined = false;
 			return;
@@ -45,10 +45,10 @@ class Ribbon {
 		const after = (next + 1) % this.length;
 		const w = i * 6;
 		this.position[w] = x + sideX;
-		this.position[w + 1] = y;
+		this.position[w + 1] = y + sideY;
 		this.position[w + 2] = z + sideZ;
 		this.position[w + 3] = x - sideX;
-		this.position[w + 4] = y;
+		this.position[w + 4] = y - sideY;
 		this.position[w + 5] = z - sideZ;
 		const value = this.joined ? alpha : 0;
 		this.alpha[i * 2] = this.alpha[i * 2 + 1] = value;
@@ -136,6 +136,7 @@ export class CarEffects {
 		this.nextPuff = 0;
 		// From the driver's seat a puff near the car would hang inside the cabin, so they fade out close to the camera.
 		this.clearAround = false;
+		this.heightAt = () => 0;
 		this.m = new Matrix4();
 		this.q = new Quaternion();
 		this.p = new Vector3();
@@ -165,7 +166,7 @@ export class CarEffects {
 			const surface = w.surface;
 			const slip = contact ? w.slip : 0;
 			const moving = Math.abs(w.vz) + Math.abs(w.vx);
-			const onFlat = contact && w.contact.y < 0.5;
+			const onFlat = contact && Math.abs(w.contact.y - this.heightAt(w.contact.x, w.contact.z)) < 0.6;
 			// How hard this tyre's working past its peak.
 			const scrub = Math.min(1, Math.max(0, (slip - 1.35) / 2.2));
 			for (const name of Object.keys(this.marks)) {
@@ -174,8 +175,8 @@ export class CarEffects {
 				// Tarmac only marks when a tyre's sliding; loose ground takes a print from anything rolling on it.
 				const marks = here && moving > 0.6 && (name === 'tarmac' ? slip > 1.4 : true);
 				const alpha = name === 'tarmac' ? Math.min(1, 0.25 + scrub) : Math.min(1, 0.32 + scrub * 0.8);
-				if (contact) ribbon.add(w.contact.x, w.contact.y + 0.02, w.contact.z, w.axisL.x * 0.13, w.axisL.z * 0.13, alpha, marks);
-				else ribbon.add(0, 0, 0, 0, 0, 0, false);
+				if (contact) ribbon.add(w.contact.x, w.contact.y + 0.03, w.contact.z, w.axisL.x * 0.13, (w.axisL.y ?? 0) * 0.13, w.axisL.z * 0.13, alpha, marks);
+				else ribbon.add(0, 0, 0, 0, 0, 0, 0, false);
 				ribbon.flush();
 			}
 			if (!contact || moving < 1) continue;
@@ -188,7 +189,7 @@ export class CarEffects {
 				if (Math.random() < count) {
 					const backX = v.x * 0.1 - w.spin * w.radius * w.axisF.x * 0.12;
 					const backZ = v.z * 0.1 - w.spin * w.radius * w.axisF.z * 0.12;
-					this.puff(w.contact.x, 0.22, w.contact.z, backX + (Math.random() - 0.5) * 1.2, (surface === 'tarmac' ? 0.6 : 0.9) + Math.random(), backZ + (Math.random() - 0.5) * 1.2, 0.6 + Math.random() * 0.5 + scrub * 0.4, surface);
+					this.puff(w.contact.x, w.contact.y + 0.22, w.contact.z, backX + (Math.random() - 0.5) * 1.2, (surface === 'tarmac' ? 0.6 : 0.9) + Math.random(), backZ + (Math.random() - 0.5) * 1.2, 0.6 + Math.random() * 0.5 + scrub * 0.4, surface);
 				}
 				count -= 1;
 			}

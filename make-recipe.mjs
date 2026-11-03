@@ -1,7 +1,7 @@
 // Writes recipe.json, the car block's demo recipe (mode browser + block): `node make-recipe.mjs`.
 // demo.js reads its controls from that file.
 //
-// For people, at most five: which car, with its picture, then the view, assists, grip and slow motion. WASD drives, Space is the
+// For people, at most five: which car, with its picture, then the view, the map, assists and grip. WASD drives, Space is the
 // handbrake and V swaps the view. The rest is for agents, in this recipe with its range and default. `--no-images` leaves the pictures out.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -41,10 +41,22 @@ const recipe = {
 				default: 'chase',
 				essential: true,
 			},
+			{
+				id: 'map',
+				label: 'Map',
+				hint: 'A rally stage round an open space, or the old yard.',
+				type: 'choice',
+				options: [
+					{ value: 'stage', label: 'Stage' },
+					{ value: 'yard', label: 'Yard' },
+				],
+				default: 'stage',
+				essential: true,
+			},
 			{ id: 'assists', label: 'Assists', hint: 'ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.', type: 'toggle', default: true, essential: true },
 			{ id: 'grip', label: 'Grip', hint: 'How much all the tyres hold, on every surface. 1 is real tyres.', type: 'number', min: 0.4, max: 1.35, step: 0.05, default: 1, essential: true },
 			{ id: 'stiffness', label: 'Suspension', hint: 'How stiff the springs are. Low and the body leans and dives; high and it stays flat.', type: 'number', min: 0.6, max: 2.2, step: 0.05, default: 1 },
-			{ id: 'slow', label: 'Slow motion', hint: 'Slows the whole world down, the car with it. 0 is full speed; 0.9 is a tenth of it.', type: 'number', min: 0, max: 0.9, step: 0.05, default: 0, essential: true },
+			{ id: 'slow', label: 'Slow motion', hint: 'Slows the whole world down, the car with it. 0 is full speed; 0.9 is a tenth of it.', type: 'number', min: 0, max: 0.9, step: 0.05, default: 0 },
 			{ id: 'power', label: 'Power', hint: 'The engine, as a share of what this car has.', type: 'number', min: 0.4, max: 2.5, step: 0.05, default: 1 },
 			{ id: 'drive', label: 'Front drive', hint: 'How much drive goes to the front: 0 is rear drive, 1 front drive. Below 0, what this car has.', type: 'number', min: -0.05, max: 1, step: 0.05, default: -0.05 },
 			{ id: 'lock', label: 'Steering lock', hint: 'How far the front wheels can turn, as a share of what this car has.', type: 'number', min: 0.5, max: 1.4, step: 0.05, default: 1 },

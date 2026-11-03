@@ -51,6 +51,24 @@
 				"essential": true
 			},
 			{
+				"id": "map",
+				"label": "Map",
+				"hint": "A rally stage round an open space, or the old yard.",
+				"type": "choice",
+				"options": [
+					{
+						"value": "stage",
+						"label": "Stage"
+					},
+					{
+						"value": "yard",
+						"label": "Yard"
+					}
+				],
+				"default": "stage",
+				"essential": true
+			},
+			{
 				"id": "assists",
 				"label": "Assists",
 				"hint": "ABS, traction control and steering help. Off, full lock is full lock and the brakes will lock.",
@@ -87,8 +105,7 @@
 				"min": 0,
 				"max": 0.9,
 				"step": 0.05,
-				"default": 0,
-				"essential": true
+				"default": 0
 			},
 			{
 				"id": "power",

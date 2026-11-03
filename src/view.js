@@ -97,7 +97,9 @@ export class ChaseView {
 		const away = this.distance * this.zoom * (1 + this.pulled) * (1 + 0.45 * this.glide * this.glide * (3 - 2 * this.glide));
 		const yaw = this.heading + this.yawOffset;
 		const flat = Math.cos(this.pitch) * away;
-		c.position.set(this.at.x - Math.sin(yaw) * flat, Math.max(0.35, this.at.y + this.lift + Math.sin(this.pitch) * away), this.at.z - Math.cos(yaw) * flat);
+		const cx = this.at.x - Math.sin(yaw) * flat;
+		const cz = this.at.z - Math.cos(yaw) * flat;
+		c.position.set(cx, Math.max((this.groundAt?.(cx, cz) ?? 0) + 0.35, this.at.y + this.lift + Math.sin(this.pitch) * away), cz);
 		look.set(this.at.x, this.at.y + this.lift, this.at.z);
 		c.lookAt(look);
 		c.rotation.z += this.roll;
