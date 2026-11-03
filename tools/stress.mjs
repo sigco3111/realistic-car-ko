@@ -14,7 +14,8 @@ const seconds = Number(process.argv[3] ?? 240);
 const out = process.argv[4] ?? 'tools/out/stress';
 fs.mkdirSync(out, { recursive: true });
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'car-stress-'));
-const context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: false, viewport: { width: 1600, height: 900 }, args: ['--mute-audio', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--ignore-gpu-blocklist'] });
+// Headless with the real GPU: a visible window gets throttled to 1 fps by whatever else is on the screen.
+const context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true, viewport: { width: 1600, height: 900 }, args: ['--mute-audio', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'] });
 const page = context.pages()[0] ?? (await context.newPage());
 const errors = [];
 page.on('console', (m) => {
@@ -115,4 +116,5 @@ const result = await page.evaluate(() => {
 });
 console.log(JSON.stringify({ rounds: round, bad, maxBodies, errors: errors.slice(0, 5), ...result }));
 await context.close();
-process.exit(bad || errors.length || result.lost ? 1 : 0);
+if (result.median > 40) console.log(`NOT VALID: frames were ${result.median} ms at the median, so the browser was throttled and nothing above says how the demo runs`);
+process.exit(bad || errors.length || result.lost || result.median > 40 ? 1 : 0);
