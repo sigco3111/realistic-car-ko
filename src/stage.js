@@ -163,11 +163,15 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 	const group = new Group();
 	group.name = 'stage';
 	scene.add(group);
-	const colliders = [];
+	const colliders = new Set();
 	const solid = (desc) => {
 		const c = world.createCollider(desc.setCollisionGroups(groups.solid).setFriction(0.6).setRestitution(0.05));
-		colliders.push(c);
+		colliders.add(c);
 		return c;
+	};
+	const unsolid = (c) => {
+		colliders.delete(c);
+		world.removeCollider(c, false);
 	};
 
 	// Pictures
@@ -470,7 +474,7 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 	progress('The trees');
 	await new Promise((go) => setTimeout(go));
 	const furniture = await addFurniture({ R, group, shape, solid, light });
-	const forestLife = await addForest({ R, group, shape, maps: { ...maps, splat }, solid, light, loader, renderer, sun: skyInfo.sun });
+	const forestLife = await addForest({ R, group, shape, maps: { ...maps, splat }, solid, unsolid, light, loader, renderer, sun: skyInfo.sun });
 	progress('The stage');
 
 	const worldCamera = new Vector3();
@@ -508,6 +512,10 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 		setActive(on) {
 			group.visible = on;
 			for (const c of colliders) c.setEnabled(on);
+		},
+		/** Each physics step, where the car is. */
+		solidAround(x, z) {
+			forestLife.solidAround(x, z);
 		},
 		/** `car` is what's drawn, `.object` and `.size`: grass lies flat under it, and it snaps what it hits. */
 		update(dt, camera, car, snapped) {

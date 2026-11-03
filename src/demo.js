@@ -480,6 +480,7 @@ function stepWorld() {
 				steer: (held.has('a') ? 1 : 0) - (held.has('d') ? 1 : 0),
 				handbrake: held.has('space') ? 1 : 0,
 			};
+	if (land === stage) stage.solidAround(car.position.x, car.position.z);
 	car.update(dt);
 	world.step(events);
 	car.afterStep(dt);

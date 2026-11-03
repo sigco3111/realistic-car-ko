@@ -14,8 +14,6 @@ const SWAY = 0.0045;
 const SWAY_SIDE = 0.04;
 const SWAY_ALONG = 0.04;
 const SWAY_UP = 0.025;
-// Metres of rumble at 30 m/s on each surface.
-const RUMBLE = { tarmac: 0.0004, gravel: 0.0022, grass: 0.003 };
 
 const BEHIND = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI);
 const forward = new Vector3();
@@ -52,7 +50,6 @@ export class DriverView {
 		this.pitch = null;
 		this.roll = 0;
 		this.corner = 0;
-		this.time = 0;
 		this.knock = 0;
 		this.knockSpeed = 0;
 	}
@@ -116,7 +113,6 @@ export class DriverView {
 			this.pitch += (pitch - this.pitch) * steadying;
 			this.roll += (roll - this.roll) * steadying;
 		}
-		this.time += dt;
 
 		// It looks a little where the car's turning, and where it's really going in a slide.
 		const moving = Math.hypot(car.velocity.x, car.velocity.z);
@@ -147,10 +143,7 @@ export class DriverView {
 			c.fov = fov;
 			c.updateProjectionMatrix();
 		}
-		const rumble = (RUMBLE[car.wheels[2].surface] ?? 0) * Math.min(1.4, moving / 30) * (car.wheelsOnGround ? 1 : 0);
-		const shake = rumble * (Math.sin(this.time * 91) + Math.sin(this.time * 143 + 1));
 		eye.copy(this.eye).add(this.sway);
-		eye.y += shake;
 		eye.applyQuaternion(q).add(this.model.object.position);
 		c.position.copy(eye);
 

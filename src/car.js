@@ -15,11 +15,12 @@ const RPM = 60 / (2 * Math.PI);
 /**
  * How each surface grips. `mu` is peak friction, `alpha` and `kappa` the slip angle (rad) and slip ratio at that peak, `falloff` what's left at
  * huge slip, and `scrub` how much harder a tyre going sideways, well past its peak, drags: it ploughs what's under it, so a slide dies.
+ * `rough` is how uneven it is, in metres, felt through the springs like any other bump.
  */
 export const SURFACES = {
-	tarmac: { mu: 1.2, alpha: 0.13, kappa: 0.11, falloff: 0.82, scrub: 0.3, rolling: 0.012 },
-	gravel: { mu: 0.86, alpha: 0.24, kappa: 0.2, falloff: 0.9, scrub: 0.4, rolling: 0.03 },
-	grass: { mu: 0.66, alpha: 0.28, kappa: 0.24, falloff: 0.85, scrub: 0.45, rolling: 0.05 },
+	tarmac: { mu: 1.2, alpha: 0.13, kappa: 0.11, falloff: 0.82, scrub: 0.3, rolling: 0.012, rough: 0.001 },
+	gravel: { mu: 0.86, alpha: 0.24, kappa: 0.2, falloff: 0.9, scrub: 0.4, rolling: 0.03, rough: 0.016 },
+	grass: { mu: 0.66, alpha: 0.28, kappa: 0.24, falloff: 0.85, scrub: 0.45, rolling: 0.05, rough: 0.024 },
 };
 
 /** A sensible car, for anything `new Car` isn't told. */
@@ -36,6 +37,7 @@ export const DEFAULTS = {
 	rebound: 1.35,
 	antiRoll: [0.45, 0.25], // Anti-roll bar, as a share of the spring rate
 	// Tyres
+	tyreGive: 0.025, // s the tyre's own spring takes to pass a sudden change on to the damper
 	gripScale: 1,
 	loadSensitivity: 0.13,
 	relaxation: 0.35, // m rolled before a change of slip angle is fully felt
@@ -80,6 +82,23 @@ const rotate = (q, x, y, z) => {
 };
 const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+/** Smooth noise from about -1 to 1, the same at the same place every time. */
+function lumpy(x, z) {
+	const ix = Math.floor(x);
+	const iz = Math.floor(z);
+	const fx = x - ix;
+	const fz = z - iz;
+	const at = (i, j) => {
+		const n = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
+		return (n - Math.floor(n)) * 2 - 1;
+	};
+	const u = fx * fx * (3 - 2 * fx);
+	const v = fz * fz * (3 - 2 * fz);
+	return (at(ix, iz) * (1 - u) + at(ix + 1, iz) * u) * (1 - v) + (at(ix, iz + 1) * (1 - u) + at(ix + 1, iz + 1) * u) * v;
+}
+/** The small unevenness of a surface, as a share of its `rough`: long swells, and shorter ones on top. Nothing short enough to rattle. */
+const unevenAt = (x, z) => lumpy(x / 6, z / 6) * 0.75 + lumpy(x / 2.4 + 40, z / 2.4) * 0.25;
 
 /**
  * How much of a tyre's peak force it makes at a slip of `s`, where 1 is the peak: it builds, peaks at 1, and lets go down
@@ -171,6 +190,8 @@ export class Car {
 				slipRatio: 0,
 				slip: 0,
 				surface: 'tarmac',
+				rough: 0,
+				dampSpeed: 0,
 				fx: 0,
 				fy: 0,
 				braking: 0,
@@ -391,14 +412,17 @@ export class Car {
 			if (hit && hit.timeOfImpact > 1e-4) {
 				const d = hit.timeOfImpact;
 				w.inContact = true;
-				w.length = Math.max(w.minLength, d - w.radius);
-				w.bottomed = d - w.radius < w.minLength;
-				w.bottomDepth = w.bottomed ? w.minLength - (d - w.radius) : 0;
 				w.contact = { x: origin.x + dir.x * d, y: origin.y + dir.y * d, z: origin.z + dir.z * d };
 				w.normal = hit.normal;
 				w.contactY = w.contact.y;
 				const name = this.surfaceAt ? this.surfaceAt(w.contact.x, w.contact.z, hit.collider) : 'tarmac';
 				w.surface = SURFACES[name] ? name : 'tarmac';
+				// Eased from one surface's roughness to the next, so the edge between them isn't a bump of its own.
+				w.rough += (SURFACES[w.surface].rough - w.rough) * 0.04;
+				const free = d - w.radius - w.rough * unevenAt(w.contact.x, w.contact.z);
+				w.length = Math.max(w.minLength, free);
+				w.bottomed = free < w.minLength;
+				w.bottomDepth = w.bottomed ? w.minLength - free : 0;
 				contacts++;
 			} else {
 				w.inContact = false;
@@ -425,7 +449,9 @@ export class Car {
 			w.load = 0;
 			if (!w.inContact) continue;
 			const damp = speed > 0 ? t.bump : t.rebound;
-			let force = w.k * w.compression + w.c * damp * clamp(speed, -2.5, 2.5);
+			// A wheel here has no weight and a tyre no give, so a kink in the road would reach the damper all at once. This is that give.
+			w.dampSpeed += (speed - w.dampSpeed) * (1 - Math.exp(-dt / t.tyreGive));
+			let force = w.k * w.compression + w.c * damp * clamp(w.dampSpeed, -2.5, 2.5);
 			force += w.arb * (w.compression - w.opposite.compression);
 			// The bump stop: stiff going in, and it gives almost nothing back coming out, or a hard landing is a trampoline.
 			if (w.bottomed) force += speed > 0 ? w.k * 5 * w.bottomDepth + w.c * 2.5 * speed : w.k * 0.5 * w.bottomDepth;

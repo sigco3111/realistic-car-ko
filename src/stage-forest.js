@@ -1,6 +1,6 @@
 // What grows on the stage. Pines and aspens grown by ez-tree: the real tree close to, a thinner one further off, and a picture of it
 // beyond that, all drawn in instances. Grass near the camera, in one draw, wrapped round wherever the camera goes, and only where the
-// land's painted as grass: never on the road. Every trunk is solid.
+// land's painted as grass: never on the road. Every trunk near the car is solid: thousands of them at once would take all the physics' time.
 import {
 	BufferAttribute,
 	BufferGeometry,
@@ -86,7 +86,7 @@ export function keepOutOfCar(material, key) {
 	material.customProgramCacheKey = () => key;
 }
 
-export async function addForest({ R, group, shape, maps, solid, light, loader, renderer, sun }) {
+export async function addForest({ R, group, shape, maps, solid, unsolid, light, loader, renderer, sun }) {
 	const [meta, bin] = await Promise.all([fetch('stage/trees.json').then((r) => r.json()), fetch('stage/trees.bin').then((r) => r.arrayBuffer())]);
 	const time = { value: 0 };
 	const load = async (name, colour, wrap) => {
@@ -184,6 +184,9 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 		}
 	}
 	const buckets = new Map();
+	const solidBuckets = new Map();
+	const solidQueue = [];
+	const solidCell = { x: -1, z: -1 };
 	const BUCKET = 64;
 	const keyOf = (x, z) => (Math.floor((x + WORLD) / BUCKET) << 12) | Math.floor((z + WORLD) / BUCKET);
 	const NEAR = light ? 34 : 62;
@@ -198,7 +201,6 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 			const k = keyOf(t.x, t.z);
 			if (!buckets.has(k)) buckets.set(k, []);
 			buckets.get(k).push(t);
-			solid(R.ColliderDesc.cylinder(3, Math.max(0.16, t.tall * 0.012)).setTranslation(t.x, t.y + 3, t.z));
 		});
 		const CAP = { near: light ? 40 : 90, mid: light ? 200 : 500 };
 		kind.meshes = {};
@@ -369,6 +371,32 @@ export async function addForest({ R, group, shape, maps, solid, light, loader, r
 
 	return {
 		count: { pine: planted.pine.length, aspen: planted.aspen.length, grass: COUNT },
+		/** Keeps the trunks round this place solid, a few each physics step, and lets go of those it's left well behind. */
+		solidAround(x, z) {
+			const cx = Math.floor((x + WORLD) / BUCKET);
+			const cz = Math.floor((z + WORLD) / BUCKET);
+			if (cx !== solidCell.x || cz !== solidCell.z) {
+				solidCell.x = cx;
+				solidCell.z = cz;
+				for (const [key, list] of solidBuckets) {
+					if (Math.abs((key >> 12) - cx) <= 2 && Math.abs((key & 4095) - cz) <= 2) continue;
+					for (const c of list) unsolid(c);
+					solidBuckets.delete(key);
+				}
+				// The cell it's in first.
+				for (const [i, j] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+					const key = ((cx + i) << 12) | (cz + j);
+					if (solidBuckets.has(key) || !buckets.has(key)) continue;
+					const made = [];
+					solidBuckets.set(key, made);
+					for (const t of buckets.get(key)) solidQueue.push({ t, made });
+				}
+			}
+			for (let n = 0; n < 30 && solidQueue.length; n++) {
+				const { t, made } = solidQueue.shift();
+				if (made === solidBuckets.get(keyOf(t.x, t.z))) made.push(solid(R.ColliderDesc.cylinder(3, Math.max(0.16, t.tall * 0.012)).setTranslation(t.x, t.y + 3, t.z)));
+			}
+		},
 		/** Where the trunks stand. */
 		standing() {
 			return [...planted.pine, ...planted.aspen];
