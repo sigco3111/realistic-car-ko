@@ -7,9 +7,9 @@ engine: three
 
 A realistic car on Rapier at real scale and real gravity: tyres that build grip, peak and let go, suspension you can see working, an engine and gearbox, a handbrake that locks the rears, and tarmac, gravel and grass. Give it any model with separate wheels.
 
-Rapier carries the body and answers the ray queries; everything a car does is worked out in `src/car.js` and applied as forces. The tyre follows **Dechode's** [Godot Advanced Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle), and the gearbox, suspension rates and assists follow [Godot Easy Vehicle Physics](https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics) by **David Shoemaker, Dechode and Baron Wittman**, all MIT. In the live demo, drive the rally car, muscle car or pickup round a yard with a road, a tarmac circle and loose gravel. WASD drives, Space is the handbrake, R resets. Drag turns the view and scroll zooms.
+Rapier carries the body and answers the ray queries; everything a car does is worked out in `src/car.js` and applied as forces. The tyre follows **Dechode's** [Godot Advanced Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle), and the gearbox, suspension rates and assists follow [Godot Easy Vehicle Physics](https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics) by **David Shoemaker, Dechode and Baron Wittman**, all MIT. In the live demo, drive the Vireo rally, rally car, muscle car or pickup on a rally stage through forest, or round the open yard. WASD drives, Space is the handbrake, V is the driver's seat, R resets. Drag turns the view and scroll zooms.
 
-Code here is MIT, art and sound are CC0.
+Code here is MIT, art and sound are CC0, except the stage's trees and leaves, which are MIT.
 
 ## Use it in a game
 
@@ -62,8 +62,9 @@ To read: `car.speed`, `car.gear`, `car.rpm`, `car.sideSpeed`, and for each of `c
 
 ## What's in it
 
-- **Tyres:** a Pacejka curve set by its peak and its falloff (`slipCurve`). Grip against slip angle on tarmac: 0.64 at 2°, 1.05 at 7°, 0.91 at 37°. Longitudinal and lateral slip share one budget, so a locked wheel has no cornering left. Grip rises less than load does, so weight transfer changes the balance. Slip angle builds over a short rolling distance.
+- **Tyres:** a Pacejka curve set by its peak and its falloff (`slipCurve`). Grip against slip angle on tarmac: 0.75 at 2°, 1.20 at 7°, 1.06 at 37°. Longitudinal and lateral slip share one budget, so a locked wheel has no cornering left. Grip rises less than load does, so weight transfer changes the balance. Slip angle builds over a short rolling distance.
 - **Surfaces:** `SURFACES` holds tarmac, gravel and grass: gravel grips less, peaks later and lets go gently.
+- **Slides die away:** a tyre going sideways past its peak ploughs what's under it (`scrub`), so a slide scrubs off speed. The handbrake brings on a little of the foot brake too (`handbrakeDrag`), and with nothing pressed the car stops rolling rather than coasting on (`coastBrake`).
 - **Suspension:** springs and dampers worked out from the ride frequency and damping ratio you ask for, separate bump and rebound, anti-roll bars and bump stops.
 - **Drivetrain:** a torque curve, a clutch that slips pulling away, an automatic gearbox with a real gap in the drive while shifting, front/rear split and limited-slip differentials.
 - **Brakes:** front-biased, and each wheel can lock. The handbrake locks the rears and takes them off the engine.
@@ -81,30 +82,51 @@ V, or the View control, swaps between the chase camera and the driver's seat. `s
 
 The Vireo has all of it. The other three cars have only a steering wheel moving, in plainer cabins.
 
+## The rally stage
+
+A 3.4 km loop round the open yard, with 1.1 km sealed and 2.3 km of gravel, hairpins, crests and a fast section, on 2 km square of land. Its shape is pure data in `src/stage-shape.js`; `src/stage.js` draws the land and road and makes them solid.
+
+- **Nothing stands on the road.** Grass only grows where the land's painted as grass. Marker poles, chevron boards and rocks stand back from the edge.
+- **Trees** are grown with ez-tree and drawn three ways by distance: the real tree, a thinner one, then a picture baked as it loads. Every trunk is solid.
+- **Nothing ends up inside the car.** Grass lies flat under it, rocks are as solid as they look, poles and boards snap off when hit and come back on Reset, and any bough or low rock inside the car's box isn't drawn. `tools/cabin-check.mjs` counts what the land draws over solid car, from the seat and from above.
+- **A weak card** gets lighter models, a quarter of the triangles (about 0.9 million at most), less grass, fewer rocks and simpler shaders, then fewer pixels and a smaller shadow if it still can't keep up.
+
 ## How it measures up
 
 Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
 
 | | Tarmac | Gravel |
 |---|---:|---:|
-| 0 to 100 km/h | 3.7 s | 5.2 s |
-| 100 to 0 km/h, ABS | 37.9 m, 1.02 g | 56.1 m, 0.70 g |
-| 100 to 0 km/h, no ABS | 43.8 m, 0.90 g | 59.5 m, 0.67 g |
-| Most grip, held at 70 km/h | 0.86 g | 0.53 g |
-| Body roll there | 4.2° | 3.0° |
-| Nose dive on the brakes | 3.2° | 2.2° |
+| 0 to 100 km/h | 3.5 s | 4.1 s |
+| 100 to 0 km/h, ABS | 35.3 m, 1.09 g | 44.9 m, 0.87 g |
+| 100 to 0 km/h, no ABS | 36.6 m, 1.05 g | 47.1 m, 0.84 g |
+| Most grip, held at 70 km/h | 1.02 g | 0.77 g |
+| Body roll there | 4.9° | 4.8° |
+| Nose dive on the brakes | 3.4° | 2.7° |
+
+How far a slide carries, by `node tools/slide-bench.mjs vireo`:
+
+| | Tarmac | Gravel | Grass |
+|---|---:|---:|---:|
+| Side-on from 90 km/h | 30.9 m | 33.8 m | 39.7 m |
+| Handbrake held from 90 km/h, straight | 45.5 m | 50.4 m | 55.3 m |
+| Handbrake and full lock held from 90 km/h | 30.4 m | 35.7 m | 44.4 m |
+| A handbrake flick from 60 km/h, then let go | 14.2 m, 1.7 s | 16.9 m, 2.0 s | 21.5 m, 4.1 s |
 
 ## What it's bad at
 
 - **It's a game car, not an engineering model.** The numbers are chosen to behave well, not fitted to any real tyre or car. There's no camber, tyre temperature or wear, aerodynamic downforce or engine stall.
 - **The suspension is rays and forces.** Wheels have no mass of their own going up and down, so a wheel doesn't hop over rough ground.
-- **Rays, not tyre shapes.** A single ray under each wheel centre means sharp kerbs and steps hit late and hard. It's only been driven on flat ground and smooth ramps.
+- **Rays, not tyre shapes.** A single ray under each wheel centre means sharp kerbs and steps hit late and hard. It's been driven on smooth ramps and the stage's land, not on rough ground at any scale smaller than that.
 - **No manual gears or clutch pedal.** The gearbox is automatic.
 - **It costs 14 tyre steps per physics step.** That's nothing for one car; hundreds would need a lighter model.
 - **The surface is looked up by you.** `surfaceAt` is called four times a step, so keep it cheap.
 - **Wheels clip the arches** on the hardest landings (`bump` and `droop` on `CarModel`).
 - **On a keyboard, steering is all or nothing.** The assists make up for that; with them off it's hard work, on purpose. A gamepad's analogue input isn't wired up in the demo.
 - **No engine or tyre sound yet.** The demo only has impacts.
+- **The handbrake isn't pure.** A real one only holds the rears; here a little foot brake comes on with it, so holding it stops the car.
+- **A snapped pole just goes.** Nothing flies off, there's only some dust.
+- **The light build hasn't been played on a real laptop.** Its load has been measured, on a fast card with the processor slowed, by `tools/laptop-check.mjs`.
 
 ## In this repo
 
@@ -118,6 +140,11 @@ Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
 | `src/driver-view.js` | The driver's view |
 | `src/mannequin.js` | A figure that stands until hit, then a ragdoll. One draw each |
 | `src/effects.js`, `src/sound.js`, `src/yard.js`, `src/demo.js` | The demo's marks, dust, impacts and yard |
+| `src/stage-shape.js`, `src/stage.js`, `src/stage-forest.js`, `src/stage-furniture.js` | The rally stage: its shape, land and road, trees and grass, rocks and poles |
+| `tools/stage-drive.mjs`, `tools/stage-check.mjs` | Laps the stage on autopilot, and checks its land against its road |
+| `tools/cabin-check.mjs` | Counts anything on the ground drawn inside the car |
+| `tools/slide-bench.mjs` | How far slides and handbrake stops carry, on each surface |
+| `tools/laptop-check.mjs` | The load on the card, and a first load with the processor slowed |
 | `tools/mark-check.mjs` | Checks tyre marks stay where they were laid: `node tools/mark-check.mjs <demo url>` |
 | `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs vireo --curve` |
 

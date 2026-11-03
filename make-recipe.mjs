@@ -74,6 +74,13 @@ const recipe = {
 		{ files: 'models/', license: 'CC0-1.0', author: 'Patch (the Vireo, rally car, muscle car, pickup and mannequin)' },
 		{ files: 'audio/', license: 'CC0-1.0', source: 'https://kenney.nl/assets/impact-sounds', author: 'Kenney (Impact Sounds)' },
 		{ files: 'thumbs/', license: 'CC0-1.0', author: 'Patch (stills of this demo)' },
+		{ files: 'stage/*-diff.webp', license: 'CC0-1.0', source: 'https://polyhaven.com', author: 'Poly Haven: Rob Tuytel, Rico Cilliers, Charlotte Baglioni (the stage\'s ground)' },
+		{ files: 'stage/*-nor.webp', license: 'CC0-1.0', source: 'https://polyhaven.com', author: 'Poly Haven: Rob Tuytel, Rico Cilliers, Charlotte Baglioni (the stage\'s ground)' },
+		{ files: 'stage/sky.webp', license: 'CC0-1.0', source: 'https://polyhaven.com/a/kloofendal_38d_partly_cloudy_puresky', author: 'Greg Zaal and Jarod Guest, Poly Haven (the sky)' },
+		{ files: 'stage/rocks.glb', license: 'CC0-1.0', source: 'https://polyhaven.com/a/rock_moss_set_01', author: 'Kless Gyzen, Poly Haven (the boulders)' },
+		{ files: 'stage/trees.bin', license: 'MIT', source: 'https://github.com/dgreenheck/ez-tree', author: 'Daniel Greenheck (ez-tree, which grew the trees)' },
+		{ files: 'stage/*-leaf.webp', license: 'MIT', source: 'https://github.com/dgreenheck/ez-tree', author: 'Daniel Greenheck (ez-tree\'s leaves)' },
+		{ files: 'stage/bark-*.webp', license: 'CC0-1.0', source: 'https://ambientcg.com', author: 'ambientCG (Bark 002 and 003)' },
 	],
 };
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

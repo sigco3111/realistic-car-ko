@@ -605,6 +605,7 @@ app = {
 	renderer,
 	script: null,
 	stepWorld,
+	lowest,
 	reset,
 	get car() {
 		return car;

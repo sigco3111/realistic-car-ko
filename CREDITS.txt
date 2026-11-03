@@ -35,5 +35,23 @@ The sounds
   Kenney, Impact Sounds, CC0 1.0
   https://kenney.nl/assets/impact-sounds
 
+The rally stage's ground, sky and rocks, all CC0 1.0, from Poly Haven (https://polyhaven.com)
+  Road gravel: Forest Ground 04, Rob Tuytel and Rico Cilliers
+  Sealed road: Asphalt 02, Rob Tuytel
+  Forest floor: Forest Leaves 02, Rob Tuytel
+  Meadow: Leafy Grass, Charlotte Baglioni
+  Bare rock: Lichen Rock, Rico Cilliers
+  Sky: Kloofendal 38d Partly Cloudy (Pure Sky), Greg Zaal and Jarod Guest
+  Boulders: Rock Moss Set 01, Kless Gyzen
+
+The rally stage's trees
+  Daniel Greenheck, ez-tree, MIT License: the pines and aspens are grown with it, and the leaves are its own
+  https://github.com/dgreenheck/ez-tree
+  Bark: ambientCG, Bark 002 and Bark 003, CC0 1.0
+  https://ambientcg.com
+
+The stage's road and land, its grass, poles, boards and gantry
+  Patch: made in code, MIT License. The rally and tyre names on the banner are made up.
+
 The yard, its textures, the tyre marks, the dust and the pictures in thumbs/
   Patch: made in code or stills of this demo, CC0 1.0

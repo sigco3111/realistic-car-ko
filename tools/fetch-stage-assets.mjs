@@ -1,12 +1,12 @@
 // The rally stage's raw assets, all Poly Haven and CC0, into tools/out/ph/<id>/ with a record.json of their licence and authors.
-// Build time only: make-stage-assets.mjs shrinks them into public/stage/.
+// Build time only: make-stage-assets.py and make-rocks.mjs shrink them into public/stage/.
 //   node tools/fetch-stage-assets.mjs
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('./out/ph/', import.meta.url));
 const TEXTURES = ['asphalt_02', 'forest_ground_04', 'forest_leaves_02', 'leafy_grass', 'lichen_rock'];
-const MODELS = ['boulder_01', 'rock_moss_set_01', 'fern_02', 'dead_tree_trunk'];
+const MODELS = ['rock_moss_set_01'];
 const SKIES = ['kloofendal_38d_partly_cloudy_puresky'];
 
 const get = async (url) => {

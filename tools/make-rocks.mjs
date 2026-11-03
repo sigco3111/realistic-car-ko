@@ -1,4 +1,4 @@
-// The stage's rocks: Poly Haven's scanned boulder and moss rocks (CC0), simplified hard, with their textures made small, in one file.
+// The stage's rocks: Poly Haven's scanned moss rocks (CC0), simplified hard, with their textures made small, in one file.
 //   node tools/make-rocks.mjs
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
