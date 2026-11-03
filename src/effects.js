@@ -32,11 +32,17 @@ class Ribbon {
 			this.joined = false;
 			return;
 		}
-		if (this.joined && Math.hypot(x - this.lastX, z - this.lastZ) < 0.28) return;
+		const moved = Math.hypot(x - this.lastX, z - this.lastZ);
+		if (this.joined && moved < 0.28) return;
+		// Too far to be the same mark, as when the car's been put back.
+		if (moved > 6) this.joined = false;
 		this.lastX = x;
 		this.lastZ = z;
+		// A new mark starts past the spare point after the last one, so nothing joins the two.
+		if (!this.joined) this.head = (this.head + 1) % this.length;
 		const i = this.head;
 		const next = (i + 1) % this.length;
+		const after = (next + 1) % this.length;
 		const w = i * 6;
 		this.position[w] = x + sideX;
 		this.position[w + 1] = y;
@@ -46,8 +52,11 @@ class Ribbon {
 		this.position[w + 5] = z - sideZ;
 		const value = this.joined ? alpha : 0;
 		this.alpha[i * 2] = this.alpha[i * 2 + 1] = value;
-		// The tail's join to the head never shows.
+		// Every point joins the next in the strip, so the point after the head sits on the head, and has nothing to draw until it's
+		// the head itself. The one after that fades the tail out where the tail is.
+		this.position.copyWithin(next * 6, w, w + 6);
 		this.alpha[next * 2] = this.alpha[next * 2 + 1] = 0;
+		this.alpha[after * 2] = this.alpha[after * 2 + 1] = 0;
 		this.head = next;
 		this.joined = true;
 		this.dirty = true;

@@ -118,6 +118,7 @@ Measured on the Vireo, 1,100 kg and 450 Nm, by `node tools/bench.mjs vireo`:
 | `src/driver-view.js` | The driver's view |
 | `src/mannequin.js` | A figure that stands until hit, then a ragdoll. One draw each |
 | `src/effects.js`, `src/sound.js`, `src/yard.js`, `src/demo.js` | The demo's marks, dust, impacts and yard |
+| `tools/mark-check.mjs` | Checks tyre marks stay where they were laid: `node tools/mark-check.mjs <demo url>` |
 | `tools/bench.mjs` | Measures any of the cars: `node tools/bench.mjs vireo --curve` |
 
 `npm install`, then `npm run dev` for the demo or `npm run build` for `dist/`. Every part's source and licence is in `LICENCE-NOTES.md` and `CREDITS.txt`.
