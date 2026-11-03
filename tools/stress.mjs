@@ -94,6 +94,7 @@ while (Date.now() - started < seconds * 1000) {
 	if (what === 3) await set('slow', Math.random() < 0.5 ? 0 : 0.8);
 	if (what === 4) await set('stiffness', 0.6 + Math.random() * 1.6);
 	if (what === 5) await page.keyboard.press('KeyR');
+	if (round % 3 === 0) await page.keyboard.press('KeyV');
 	if (round % 4 === 0) await page.mouse.wheel(0, Math.random() < 0.5 ? 300 : -300);
 	const state = await page.evaluate(() => {
 		const a = window.__block.app;

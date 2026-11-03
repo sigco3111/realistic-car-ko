@@ -277,6 +277,47 @@ const crates = await frame.evaluate(() => {
 });
 await shot('after-reset');
 
+// The driver's view: V and the control, on every car, with everything back after Reset.
+const seen = () => frame.evaluate(() => { const a = window.__block.app; return { view: a.values.view, near: a.camera.near, fov: a.camera.fov, x: a.camera.position.x, y: a.camera.position.y, z: a.camera.position.z, cx: a.car.position.x, cy: a.car.position.y, cz: a.car.position.z }; });
+const inCar = (s) => s.near < 0.1 && s.fov > 55 && Math.hypot(s.x - s.cx, s.y - s.cy, s.z - s.cz) < 2.2;
+await page.mouse.click(640, 360);
+await page.keyboard.press('KeyV');
+await wait(200);
+let eye = await seen();
+check('V: the driver\'s view, in the seat, and the page told', eye.view === 'driver' && inCar(eye) && (await page.evaluate(() => window.got.state.view)) === 'driver', JSON.stringify(eye));
+await shot('driver');
+await page.mouse.move(600, 360);
+await page.mouse.down();
+await page.mouse.move(760, 400, { steps: 4 });
+await page.mouse.up();
+await wait(1800);
+const lookedBack = await frame.evaluate(() => Math.abs(window.__block.app.view.yawOffset));
+check('driver: a drag looks round, then comes back', lookedBack < 0.05, lookedBack.toFixed(3));
+for (const v of recipe.controls.find((c) => c.id === 'car').options.map((o) => o.value)) {
+	await page.evaluate((c) => window.tell({ type: 'set', id: 'car', value: c }), v);
+	await wait(250);
+	eye = await seen();
+	check(`driver: stays in the seat of ${v}`, eye.view === 'driver' && inCar(eye), JSON.stringify(eye));
+}
+await page.keyboard.down('KeyW');
+await wait(1200);
+await page.keyboard.up('KeyW');
+eye = await seen();
+check('driver: the eye stays in the car moving', inCar(eye), JSON.stringify(eye));
+await page.keyboard.press('KeyV');
+await wait(200);
+eye = await seen();
+check('V again: back behind the car', eye.view === 'chase' && eye.near === 0.5 && eye.fov === 38, JSON.stringify(eye));
+await page.evaluate(() => window.tell({ type: 'set', id: 'view', value: 'driver' }));
+await wait(200);
+eye = await seen();
+check('the View control: the driver\'s view', eye.view === 'driver' && inCar(eye));
+await page.evaluate(() => window.tell({ type: 'trigger', id: 'reset' }));
+await wait(1800);
+eye = await seen();
+const back = await read();
+check('Reset from the seat: chase view, all defaults', eye.view === 'chase' && eye.near === 0.5 && eye.fov === 38 && recipe.controls.every((c) => back.values[c.id] === c.default) && Math.hypot(back.x, back.z) < 0.5, JSON.stringify(eye));
+
 // Rapid switching with keys held, as a person fiddling would.
 await page.mouse.click(640, 360);
 await page.keyboard.down('KeyW');
