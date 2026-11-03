@@ -125,6 +125,8 @@ export class CarEffects {
 		scene.add(this.dust);
 		this.puffs = Array.from({ length: this.N }, () => ({ life: 0, max: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, size: 1, grow: 3, opacity: 0.7, color: '#ffffff' }));
 		this.nextPuff = 0;
+		// From the driver's seat a puff near the car would hang inside the cabin, so they fade out close to the camera.
+		this.clearAround = false;
 		this.m = new Matrix4();
 		this.q = new Quaternion();
 		this.p = new Vector3();
@@ -201,7 +203,12 @@ export class CarEffects {
 			this.m.compose(this.p.set(d.x, d.y, d.z), this.q, this.s.set(size, size, size));
 			this.dust.setMatrixAt(n, this.m);
 			this.dust.setColorAt(n, this.c.set(d.color));
-			this.fade.array[n] = t * t * d.opacity;
+			let near = 1;
+			if (this.clearAround && camera) {
+				const p = camera.position;
+				near = Math.min(1, Math.max(0, (Math.hypot(d.x - p.x, d.y - p.y, d.z - p.z) - size * 0.5 - 1) / 2));
+			}
+			this.fade.array[n] = t * t * d.opacity * near;
 			n++;
 		}
 		this.dust.count = n;

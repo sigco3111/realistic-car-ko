@@ -211,7 +211,7 @@ for (const id of ids) {
 	dirt[id] = addDirt(loaded[id], { value: CLEAN });
 	measured[id] = measureCar(loaded[id]);
 	const stand = { wheels: measured[id].wheels.map((w, index) => ({ ...w, index, ride: 0, length: 0, angle: 0, steerAngle: 0 })), position: START, quaternion: { x: 0, y: 0, z: 0, w: 1 } };
-	models[id] = new CarModel(loaded[id], stand, { ...CARS[id].travelDrawn, wheelTurn: CARS[id].wheelTurn, wheelAxis: CARS[id].wheelAxis, cabin: CARS[id].cabin });
+	models[id] = new CarModel(loaded[id], stand, { ...CARS[id].travelDrawn, wheelTurn: CARS[id].wheelTurn, wheelAxis: CARS[id].wheelAxis, cabin: CARS[id].cabin, cabinGlow: CARS[id].cabinGlow });
 	models[id].object.visible = false;
 	scene.add(models[id].object);
 }
@@ -272,6 +272,7 @@ function applyView() {
 	}
 	const inside = values.view === 'driver';
 	model.showInside(inside);
+	effects.clearAround = inside;
 	if (inside) driver.seat(model, eye);
 	else if (view === driver) chase.jump(car);
 	view = inside ? driver : chase;

@@ -12,6 +12,7 @@ export const CARS = {
 		travelDrawn: { bump: 0.13, droop: 0.13 },
 		// The model has eye_driver, and these moving cabin parts.
 		wheelTurn: 8,
+		cabinGlow: 0.16,
 		wheelAxis: { x: 0, y: 1, z: 0 },
 		cabin: {
 			rpm: { full: 9000, sweep: 4.712, sign: 1 },

@@ -103,6 +103,7 @@ const CABIN = {
 	handbrake: 'part_handbrake',
 	gear: 'part_gear_lever',
 };
+const INSIDE_GLASS = 0.12;
 const AXIS_X = new Vector3(1, 0, 0);
 const AXIS_Z = new Vector3(0, 0, 1);
 
@@ -132,7 +133,7 @@ function holdPart(node, frame = 'model') {
  *   rocking about local X on a shift. Needles and pedals only show after `showInside(true)`.
  */
 export class CarModel {
-	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr', rl: 'part_steer_rl', rr: 'part_steer_rr' }, bump = 0.13, droop = 0.2, wheelTurn = 5, wheelAxis = null, cabin = null } = {}) {
+	constructor(model, car, { names = DEFAULT_NAMES, steerNames = { fl: 'part_steer_fl', fr: 'part_steer_fr', rl: 'part_steer_rl', rr: 'part_steer_rr' }, bump = 0.13, droop = 0.2, wheelTurn = 5, wheelAxis = null, cabin = null, cabinGlow = 0 } = {}) {
 		this.car = car;
 		this.object = new Group();
 		this.object.name = 'car';
@@ -242,6 +243,23 @@ export class CarModel {
 			this.object.add(group);
 			this.parts[key] = { group, restQ: group.quaternion.clone(), amount: 0 };
 		}
+		// Glass looks right from outside and too dark from in the seat.
+		this.glass = new Set();
+		this.object.traverse((o) => {
+			if (o.isMesh && o.material.name === 'glass') this.glass.add(o.material);
+		});
+		for (const m of this.glass) m.userData.outside = m.opacity;
+		// The eye adapts to a dark cabin in a bright yard, so from the seat its trim lifts a little. Always set up, off outside, so
+		// that swapping views compiles nothing.
+		this.object.traverse((o) => {
+			if (cabinGlow && o.isMesh && o.material.name === 'trim' && o.material.map && !this.trim) {
+				this.trim = o.material;
+				this.trim.emissive.set('#ffffff');
+				this.trim.emissiveMap = this.trim.map;
+				this.trim.emissiveIntensity = 0;
+			}
+		});
+		this.cabinGlow = cabinGlow;
 		this.shiftRock = 0;
 		this.lastGear = 1;
 		this.showInside(false);
@@ -320,6 +338,8 @@ export class CarModel {
 
 	/** Needles and pedals can't be seen from outside, so they only cost a draw from the seat. */
 	showInside(on) {
+		if (this.trim) this.trim.emissiveIntensity = on ? this.cabinGlow : 0;
+		for (const m of this.glass) m.opacity = on ? Math.min(m.userData.outside, INSIDE_GLASS) : m.userData.outside;
 		for (const key of ['rpm', 'speed', 'clutch', 'brake', 'throttle']) if (this.parts[key]) this.parts[key].group.visible = on;
 	}
 
