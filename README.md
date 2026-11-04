@@ -11,6 +11,14 @@ Rapier carries the body and answers the ray queries; everything a car does is wo
 
 Code here is MIT, art and sound are CC0, except the stage's trees and leaves, which are MIT.
 
+## What this owns
+
+- **Renderer:** The game files need none. `src/car.js` is physics with no three.js, and `src/car-model.js` and `src/view.js` move three objects and a camera. Only drawing `look.object` needs a renderer, and that's yours: the model's glTF materials ran on WebGL and on forests' WebGPU renderer. The `WebGLRenderer` in `src/demo.js` is the demo's.
+- **Frame loop:** It doesn't draw the frame. At 120 Hz in your own loop: `car.input = {...}`, `car.update(STEP)`, `world.step()`, `car.afterStep(STEP)`, `look.stepped()`. Each frame: `look.update(frameTime, alpha)` and `view.update(car, look.object.position, frameTime)`. Add `look.object` to your scene.
+- **three:** `package.json` pins 0.186.1 and `@dimforge/rapier3d-compat` 0.17.3. `src/car.js` needs only Rapier, which you pass in.
+- **Copy:** `src/car.js`, plus `src/car-model.js` and `src/view.js` for three.js, and a model with separate wheels, such as `public/models/vireo-rally.glb`.
+- **Elsewhere:** The body and the wheels' rays live in the Rapier world you pass, so another block's ground has to be colliders in it. Forests' heights as a heightfield and capsules from `world.trunksNear` worked.
+
 ## Use it in a game
 
 Start from the files below rather than `src/demo.js`. The demo is the yard, with its crates, ramps and mannequins (`yard.js`, `stage*.js`, `mannequin.js`, `stage-furniture.js`), and it talks to Patch's page through `patch-block`, which a game doesn't need. Your game supplies its own ground and scene. The car's physics and model also run on WebGPU, under `patch/forests`: Patch's guide has that recipe.
