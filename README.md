@@ -5,7 +5,7 @@ Patch의 **Realistic car**(@patch, https://patch.gg/patch/car)를 한국어로 �
 **플레이:** https://sigco3111.github.io/realistic-car-ko/
 **원작:** https://patch.gg/patch/car · 소스: https://git.patch.gg/patch/car.git
 
-![대표 화면](screenshots/01-stage.png)
+![대표 화면](screenshots/01-stage.webp)
 
 ## 소개
 
@@ -23,7 +23,7 @@ Patch의 **Realistic car**(@patch, https://patch.gg/patch/car)를 한국어로 �
 
 | 랠리 스테이지 | 운전석 시점 | 야드 맵 |
 | --- | --- | --- |
-| ![스테이지](screenshots/01-stage.png) | ![운전석](screenshots/02-driver.png) | ![야드](screenshots/03-yard.png) |
+| ![스테이지](screenshots/01-stage.webp) | ![운전석](screenshots/02-driver.webp) | ![야드](screenshots/03-yard.webp) |
 
 ## 조작법
 
