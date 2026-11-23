@@ -89,13 +89,13 @@ function bannerTexture() {
 	g.fillStyle = '#e8b53a';
 	g.fillRect(0, 228, 2048, 12);
 	g.fillStyle = '#f2efe6';
-	g.font = '800 128px "Arial Narrow", Arial, sans-serif';
+	g.font = '800 120px "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", "Arial Narrow", Arial, sans-serif';
 	g.textAlign = 'center';
 	g.textBaseline = 'middle';
-	g.fillText('NORDVIK RALLY', 720, 108);
-	g.font = '700 84px "Arial Narrow", Arial, sans-serif';
+	g.fillText('노르드비크 랠리', 720, 108);
+	g.font = '700 80px "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", "Arial Narrow", Arial, sans-serif';
 	g.fillStyle = '#e8b53a';
-	g.fillText('ORLA TYRES', 1560, 108);
+	g.fillText('오를라 타이어', 1560, 108);
 	const t = new CanvasTexture(canvas);
 	t.colorSpace = SRGBColorSpace;
 	t.anisotropy = 8;

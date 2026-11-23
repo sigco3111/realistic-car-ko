@@ -67,10 +67,15 @@ const block = patchBlock({
 	},
 });
 const breathe = () => new Promise((go) => setTimeout(go));
-block.progress?.(0.05, 'Loading the physics');
+const loadingEl = document.getElementById('loading');
+const progress = (value, words) => {
+	if (loadingEl && words) loadingEl.textContent = words + '…';
+	block.progress?.(value, words);
+};
+progress(0.05, '물리 엔진 불러오는 중');
 const RAPIER = (await import('@dimforge/rapier3d-compat')).default;
 await RAPIER.init();
-block.progress?.(0.2, 'Loading the car');
+progress(0.2, '자동차 불러오는 중');
 
 // Rendering
 let pixelRatio = Math.min(devicePixelRatio, 1.5);
@@ -176,13 +181,13 @@ const cardInfo = context.getExtension('WEBGL_debug_renderer_info');
 const card = cardInfo ? context.getParameter(cardInfo.UNMASKED_RENDERER_WEBGL) : '';
 const weakCard = params.has('light') || /intel|swiftshader|llvmpipe|software|basic render|mali|adreno|powervr/i.test(card);
 const [dummyGltf, carGltf] = await Promise.all(['models/mannequin.glb', weakCard ? VIREO.light : VIREO.file].map((f) => loader.loadAsync(f)));
-block.progress?.(0.5, 'Building the yard');
+progress(0.5, '야드 만드는 중');
 await breathe();
 
 const yard = buildYard(RAPIER, world, scene, GROUPS);
-block.progress?.(0.52, 'Building the stage');
+progress(0.52, '스테이지 만드는 중');
 await breathe();
-const stage = await buildStage(RAPIER, world, scene, GROUPS, { light: weakCard, renderer, progress: (words) => block.progress?.(0.56, words) });
+const stage = await buildStage(RAPIER, world, scene, GROUPS, { light: weakCard, renderer, progress: (words) => progress(0.56, words) });
 await breathe();
 // The two maps share the open space's ramps and loose things and mannequins. What's different is here.
 const yardLook = { environment: scene.environment, environmentIntensity: scene.environmentIntensity, sun: new Vector3(SUN_FROM.x, SUN_FROM.y, SUN_FROM.z).normalize(), sunColour: sun.color.getStyle(), sunIntensity: sun.intensity, hemisphere: { sky: '#c6d8ea', ground: '#8d6a42', intensity: 0.75 }, fog: { colour: '#e7bd8d', near: 170, far: 620 }, far: 1400 };
@@ -304,6 +309,7 @@ function applyView() {
 	camera.updateProjectionMatrix();
 }
 
+let syncPanelUI = () => {};
 function reset() {
 	const wasMap = values.map;
 	Object.assign(values, defaults);
@@ -320,6 +326,7 @@ function reset() {
 	placeCar();
 	dirt.value = CLEAN;
 	view.glideIn();
+	syncPanelUI();
 }
 
 // Keys
@@ -513,6 +520,7 @@ function stepWorld() {
 }
 
 // The readout: speed, gear, and how far each spring is through its travel.
+const SURFACE_KO = { tarmac: '아스팔트', gravel: '자갈', grass: '잔디' };
 const readout = {
 	speed: document.getElementById('speed'),
 	gear: document.getElementById('gear'),
@@ -527,7 +535,7 @@ function showReadout(now) {
 	readout.next = now + 80;
 	readout.speed.textContent = String(Math.round(Math.abs(car.forwardSpeed) * 3.6));
 	readout.gear.textContent = car.gear < 0 ? 'R' : String(car.gear);
-	readout.surface.textContent = car.wheels[2].surface;
+	readout.surface.textContent = SURFACE_KO[car.wheels[2].surface] ?? car.wheels[2].surface;
 	car.wheels.forEach((w, i) => {
 		readout.bars[i].style.transform = `scaleY(${Math.max(0.03, Math.min(1, w.travelled)).toFixed(2)})`;
 	});
@@ -647,17 +655,119 @@ app = {
 		else if (id !== 'slow') applyControls();
 	},
 };
+
+// 한글판 단독 배포용 설정 패널: Patch 호스트 페이지가 보여 주던 조작(시점, 맵, 보조, 그립 등)을 그대로 제공한다.
+const PANEL_KO = {
+	view: { label: '시점', hint: '차 뒤에서 보거나 운전석에서 봅니다. 주행 중 V로 바꿉니다.', options: { chase: '추적', driver: '운전석' } },
+	map: { label: '맵', hint: '숲을 도는 랠리 스테이지 또는 낡은 야드.', options: { stage: '스테이지', yard: '야드' } },
+	assists: { label: '주행 보조', hint: 'ABS, 트랙션 컨트롤, 스티어링 보조. 끄면 조향과 브레이크가 그대로 잠깁니다.' },
+	grip: { label: '그립', hint: '모든 노면에서 타이어가 버티는 정도. 1이 실제 타이어.' },
+	stiffness: { label: '서스펜션', hint: '스프링 강성. 낮으면 차체가 기울고 앞이 파묻히고, 높으면 평평하게 유지.' },
+	slow: { label: '슬로우 모션', hint: '차를 포함해 세상 전체가 느려집니다. 0은 정상 속도, 0.9는 1/10 속도.' },
+	power: { label: '출력', hint: '엔진 출력, 원래 차 대비 비율.' },
+	drive: { label: '앞바퀴 구동', hint: '앞바퀴로 가는 구동력: 0은 후륜 구동, 1은 전륜 구동. 0 미만이면 원래 차 설정.' },
+	lock: { label: '조향각', hint: '앞바퀴가 꺾이는 최대 각도, 원래 차 대비 비율.' },
+	flip_wait: { label: '전복 후 복구', hint: '지붕이나 옆면으로 뒤집힌 뒤 스스로 일어날 때까지의 시간.', unit: '초' },
+};
+{
+	const panel = document.getElementById('panel');
+	const box = document.createElement('div');
+	box.className = 'box';
+	panel.appendChild(box);
+	const inputs = new Map();
+	const setControl = (id, value) => {
+		app.set(id, value);
+		block.state({ ...values });
+		syncPanelUI();
+	};
+	for (const control of recipeBlock.controls) {
+		const ko = PANEL_KO[control.id] ?? { label: control.label ?? control.id };
+		const row = document.createElement('div');
+		row.className = 'row';
+		if (!control.essential) row.dataset.adv = '1';
+		row.title = ko.hint ?? control.hint ?? '';
+		const name = document.createElement('span');
+		name.className = 'name';
+		name.textContent = ko.label;
+		row.appendChild(name);
+		if (control.type === 'choice') {
+			const buttons = new Map();
+			for (const option of control.options) {
+				const b = document.createElement('button');
+				b.type = 'button';
+				b.textContent = ko.options?.[option.value] ?? option.label ?? option.value;
+				b.addEventListener('click', () => setControl(control.id, option.value));
+				buttons.set(option.value, b);
+				row.appendChild(b);
+			}
+			inputs.set(control.id, { sync: () => buttons.forEach((b, v) => b.classList.toggle('on', values[control.id] === v)) });
+		} else if (control.type === 'toggle') {
+			const b = document.createElement('button');
+			b.type = 'button';
+			b.addEventListener('click', () => setControl(control.id, !values[control.id]));
+			row.appendChild(b);
+			inputs.set(control.id, { sync: () => { b.classList.toggle('on', !!values[control.id]); b.textContent = values[control.id] ? '켜짐' : '꺼짐'; } });
+		} else if (control.type === 'number') {
+			const slider = document.createElement('input');
+			slider.type = 'range';
+			slider.min = control.min;
+			slider.max = control.max;
+			slider.step = control.step;
+			const val = document.createElement('span');
+			val.className = 'val';
+			slider.addEventListener('input', () => setControl(control.id, Number(slider.value)));
+			row.appendChild(slider);
+			row.appendChild(val);
+			inputs.set(control.id, { sync: () => { slider.value = values[control.id]; val.textContent = control.id === 'drive' && values[control.id] < 0 ? '기본' : `${values[control.id]}${ko.unit ?? control.unit ?? ''}`; } });
+		}
+		box.appendChild(row);
+	}
+	const foot = document.createElement('div');
+	foot.className = 'row';
+	const more = document.createElement('button');
+	more.type = 'button';
+	more.className = 'more';
+	const syncMore = () => {
+		more.textContent = panel.classList.contains('adv') ? '세부 설정 접기' : '세부 설정 펼치기';
+	};
+	more.addEventListener('click', () => {
+		panel.classList.toggle('adv');
+		syncMore();
+	});
+	syncMore();
+	const advRows = [...box.querySelectorAll('[data-adv]')];
+	const advBox = document.createElement('div');
+	advBox.id = 'panel-adv';
+	for (const row of advRows) advBox.appendChild(row);
+	const resetButton = document.createElement('button');
+	resetButton.type = 'button';
+	resetButton.textContent = '리셋';
+	resetButton.title = '처음으로: 모든 설정, 차, 상자, 마네킹, 시점이 돌아갑니다.';
+	resetButton.addEventListener('click', () => app.reset());
+	foot.appendChild(more);
+	foot.appendChild(resetButton);
+	box.appendChild(advBox);
+	box.appendChild(foot);
+	syncPanelUI = () => inputs.forEach((input) => input.sync());
+	// V키 등 패널 밖에서 바뀐 설정도 패널에 반영한다.
+	const innerSet = app.set;
+	app.set = (id, value) => {
+		innerSet(id, value);
+		syncPanelUI();
+	};
+	syncPanelUI();
+}
 window.__block = { app, times, renderer, block };
 
 // Warm-up, all behind the cover: settle the world, send everything to the GPU, draw every kind of thing once.
-block.progress?.(0.65, 'Settling the yard');
+progress(0.65, '야드 안정시키는 중');
 await breathe();
 for (let i = 0; i < 120; i++) stepWorld();
 // A practice fall, so the first real one has nothing new to do.
 figures[0].fall({ x: 0, y: 1, z: 0 });
 for (let i = 0; i < 8; i++) stepWorld();
 figures[0].update(STEP);
-block.progress?.(0.75, 'Preparing the pictures');
+progress(0.75, '화면 준비하는 중');
 await breathe();
 const gl = renderer.getContext();
 stage.group.visible = true;
@@ -677,7 +787,7 @@ scene.traverse((o) => {
 	for (const key of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) if (material[key]) renderer.initTexture(material[key]);
 });
 await renderer.compileAsync(scene, camera);
-block.progress?.(0.88, 'Preparing the pictures');
+progress(0.88, '화면 준비하는 중');
 await breathe();
 renderer.render(scene, camera);
 await breathe();
@@ -709,7 +819,7 @@ await new Promise((done) => {
 	check();
 });
 gl.deleteSync(sync);
-block.progress?.(0.96, 'Almost there');
+progress(0.96, '거의 다 됐습니다');
 
 // Lift the cover under the page's own loader, and only say ready once frames are on time.
 last = performance.now();

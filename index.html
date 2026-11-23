@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Realistic car</title>
+<title>리얼리스틱 카 한글판</title>
 <link rel="icon" href="data:," />
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #d9c9a8; }
   #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
-  #cover { position: fixed; inset: 0; background: #d9c9a8; pointer-events: none; }
+  #cover { position: fixed; inset: 0; background: #d9c9a8; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  #loading { font: 500 13px/1.6 ui-monospace, 'Cascadia Mono', Consolas, 'Malgun Gothic', 'Apple SD Gothic Neo', monospace; color: #1c150a; letter-spacing: 0.04em; }
   .hud { position: fixed; pointer-events: none; font: 500 11px/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.02em; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
   #keys { right: 12px; bottom: 8px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
   #keys kbd { font: inherit; min-width: 9px; padding: 1px 5px; text-align: center; border-radius: 4px; color: #fff; background: rgba(20, 16, 10, 0.5); border: 1px solid rgba(255, 255, 255, 0.28); text-shadow: none; }
@@ -31,12 +32,26 @@
   #tc.on, #abs.on { opacity: 1; color: #ffd38a; }
   #lost { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; background: #1c150a; color: #fff; font: 500 14px/1.5 ui-monospace, Consolas, monospace; }
   #lost[hidden] { display: none; }
-  @media (max-width: 720px) { #credit { display: none; } }
+  #panel { left: 12px; top: 12px; pointer-events: auto; font-family: ui-monospace, 'Cascadia Mono', Consolas, 'Malgun Gothic', 'Apple SD Gothic Neo', monospace; }
+  #panel .box { background: rgba(20, 16, 10, 0.55); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; backdrop-filter: blur(2px); }
+  #panel .row { display: flex; align-items: center; gap: 6px; }
+  #panel .name { min-width: 58px; opacity: 0.85; }
+  #panel button { font: inherit; color: #fff; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 5px; padding: 2px 8px; cursor: pointer; text-shadow: none; }
+  #panel button.on { background: #fff; color: #1c150a; }
+  #panel button:hover { border-color: rgba(255, 255, 255, 0.6); }
+  #panel input[type="range"] { width: 110px; accent-color: #ffd38a; }
+  #panel .val { min-width: 34px; text-align: right; opacity: 0.9; }
+  #panel .more { opacity: 0.85; }
+  #panel .hint { display: none; }
+  #panel #panel-adv { display: none; flex-direction: column; gap: 7px; }
+  #panel.adv #panel-adv { display: flex; }
+  @media (max-width: 720px) { #credit { display: none; } #panel .name { min-width: 46px; } #panel input[type="range"] { width: 84px; } }
 </style>
 </head>
 <body>
 <canvas id="view" tabindex="0"></canvas>
-<div id="cover"></div>
+<div id="panel" class="hud"></div>
+<div id="cover"><span id="loading">불러오는 중…</span></div>
 <div id="dash" class="hud">
   <div><span id="speed">0</span><span class="unit">km/h</span></div>
   <div id="gear">1</div>
@@ -44,14 +59,14 @@
   <div id="side"><span id="surface">tarmac</span><span><span id="tc">TC</span> <span id="abs">ABS</span></span></div>
 </div>
 <div id="keys" class="hud">
-  <span class="first">Click to use the keys:</span>
-  <kbd data-k="w">W</kbd><kbd data-k="a">A</kbd><kbd data-k="s">S</kbd><kbd data-k="d">D</kbd> drive<span class="gap"></span>
-  <kbd data-k="space">Space</kbd> handbrake<span class="gap"></span>
-  <kbd data-k="v">V</kbd> view<span class="gap"></span>
-  <kbd data-k="r">R</kbd> reset
+  <span class="first">키를 쓰려면 화면을 클릭하세요:</span>
+  <kbd data-k="w">W</kbd><kbd data-k="a">A</kbd><kbd data-k="s">S</kbd><kbd data-k="d">D</kbd> 주행<span class="gap"></span>
+  <kbd data-k="space">Space</kbd> 사이드브레이크<span class="gap"></span>
+  <kbd data-k="v">V</kbd> 시점<span class="gap"></span>
+  <kbd data-k="r">R</kbd> 리셋
 </div>
-<div id="credit" class="hud">Tyres: Godot Advanced Vehicle by Dechode. Gearbox and assists: Godot Easy Vehicle Physics by David Shoemaker. On Rapier.</div>
-<div id="lost" hidden>The graphics card stopped answering. Reload, or restart your browser.</div>
+<div id="credit" class="hud">타이어: Dechode의 Godot Advanced Vehicle · 기어박스와 보조 장치: David Shoemaker의 Godot Easy Vehicle Physics · Rapier 물리 엔진</div>
+<div id="lost" hidden>그래픽 카드가 응답하지 않습니다. 새로고침하거나 브라우저를 다시 시작하세요.</div>
 <script type="module" src="./src/demo.js"></script>
 </body>
 </html>

@@ -198,7 +198,7 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 		loader.loadAsync('stage/sky.webp'),
 	]);
 	const maps = { grass, grassN, forest, forestN, rock, rockN, gravel, gravelN, asphalt, asphaltN };
-	progress('The land');
+	progress('지형 만드는 중');
 
 	// The land's solid shape. Rapier wants it by columns, x slowest.
 	const n = SIZE;
@@ -242,7 +242,7 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 	splat.wrapS = splat.wrapT = ClampToEdgeWrapping;
 	splat.generateMipmaps = true;
 	splat.needsUpdate = true;
-	progress('The land');
+	progress('지형 만드는 중');
 	await new Promise((go) => setTimeout(go));
 
 	// The land's picture, in pieces that can be left out and drawn coarser far away.
@@ -331,7 +331,7 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 			chunks.push({ x: (cx + 0.5) * span * CELL - WORLD, z: (cz + 0.5) * span * CELL - WORLD, levels, level: 0 });
 		}
 	}
-	progress('The road');
+	progress('도로 만드는 중');
 	await new Promise((go) => setTimeout(go));
 
 	// The road: a strip with a bevel at each side that dips into the land, in lengths that can be left out.
@@ -471,11 +471,11 @@ export async function buildStage(RAPIER, world, scene, groups, { light = false, 
 	const environment = pmrem.fromScene(reflected, 0.01).texture;
 	pmrem.dispose();
 
-	progress('The trees');
+	progress('나무 심는 중');
 	await new Promise((go) => setTimeout(go));
 	const furniture = await addFurniture({ R, group, shape, solid, light });
 	const forestLife = await addForest({ R, group, shape, maps: { ...maps, splat }, solid, unsolid, light, loader, renderer, sun: skyInfo.sun });
-	progress('The stage');
+	progress('스테이지 만드는 중');
 
 	const worldCamera = new Vector3();
 	let frame = 0;
