@@ -1,0 +1,78 @@
+The recordings behind the demo's sounds. Each is cut, levelled and looped by tools/make-sounds.py from the preview Freesound serves.
+
+Subaru forester - Engine sound by Ykropiw, CC0-1.0, https://freesound.org/people/Ykropiw/sounds/397351/
+  engine-rally-0.ogg
+DynoJet Scion FR-S by dezoris, CC0-1.0, https://freesound.org/people/dezoris/sounds/183654/
+  engine-rally-1.ogg, engine-rally-2.ogg, engine-rally-3.ogg, engine-rally-4.ogg, engine-rally-5.ogg
+Body Thud.wav by Kane53126, CC0-1.0, https://freesound.org/people/Kane53126/sounds/257928/
+  figure-heavy-0.ogg
+body_hit.wav by insanity54, CC0-1.0, https://freesound.org/people/insanity54/sounds/276600/
+  figure-heavy-1.ogg
+Body Wall Impact.wav by jawbutch, CC0-1.0, https://freesound.org/people/jawbutch/sounds/344402/
+  figure-heavy-2.ogg
+Classic Car Ford Mustang Gear Stick.wav by mincedbeats, CC0-1.0, https://freesound.org/people/mincedbeats/sounds/630543/
+  gear-heavy-0.ogg, gear-heavy-1.ogg, gear-heavy-2.ogg, gear-heavy-3.ogg, gear-heavy-4.ogg
+Shifting Car.wav by acarney2019, CC0-1.0, https://freesound.org/people/acarney2019/sounds/489435/
+  gear-heavy-5.ogg, gear-heavy-6.ogg
+Heavy Impacts by Nightflame, CC0-1.0, https://freesound.org/people/Nightflame/sounds/397596/
+  land-heavy-0.ogg, land-heavy-1.ogg, land-heavy-2.ogg
+HEAVY BATTERY THUD IN GRASS.wav by djouppi10, CC0-1.0, https://freesound.org/people/djouppi10/sounds/150490/
+  land-heavy-3.ogg, land-heavy-4.ogg, land-heavy-5.ogg
+car tire on gravel rear cu blyth 21 6 12.flac by TRP, CC0-1.0, https://freesound.org/people/TRP/sounds/577504/
+  loop-gravel.ogg
+Tire noise on the highway / Bruit des pneus sur l'autoroute by ViveleVent, CC0-1.0, https://freesound.org/people/ViveleVent/sounds/817389/
+  loop-road.ogg
+Metal Scraping on Concrete by deleted_user_7146007, CC0-1.0, https://freesound.org/people/deleted_user_7146007/sounds/383794/
+  loop-scrape.ogg
+screeching tyres / tires by johnnydekk, CC0-1.0, https://freesound.org/people/johnnydekk/sounds/614627/
+  loop-squeal.ogg
+Car Strong Wind Noise.mp3 by FunWithSound, CC0-1.0, https://freesound.org/people/FunWithSound/sounds/439242/
+  loop-wind.ogg
+Car Crash_EXT.wav by PauliusI, CC0-1.0, https://freesound.org/people/PauliusI/sounds/346299/
+  metal-heavy-0.ogg
+Car Crash by squareal, CC0-1.0, https://freesound.org/people/squareal/sounds/237375/
+  metal-heavy-1.ogg
+Hood Impact by LPA134, CC0-1.0, https://freesound.org/people/LPA134/sounds/329516/
+  metal-heavy-2.ogg, metal-heavy-3.ogg
+MTLimpt_Metal Impact Medium Bang Resonate x17 by harrisonlace, CC0-1.0, https://freesound.org/people/harrisonlace/sounds/798843/
+  metal-heavy-4.ogg, metal-heavy-5.ogg, metal-heavy-6.ogg, metal-light-0.ogg, metal-light-1.ogg, metal-light-2.ogg, metal-light-3.ogg, metal-light-4.ogg, metal-light-5.ogg
+metal_collision.wav by RichieMcMullen, CC0-1.0, https://freesound.org/people/RichieMcMullen/sounds/386798/
+  metal-light-6.ogg
+Metal Sheet Cabinet Hit against 50cmx50cmx200cm hollow Part 1.wav by breiti, CC0-1.0, https://freesound.org/people/breiti/sounds/342976/
+  metal-light-7.ogg, metal-light-8.ogg, metal-light-9.ogg, metal-light-10.ogg
+Car Antilag (No cleanup, 32float) by modusmogulus, CC0-1.0, https://freesound.org/people/modusmogulus/sounds/797835/
+  pop-heavy-0.ogg, pop-heavy-1.ogg, pop-heavy-2.ogg, pop-heavy-3.ogg, pop-heavy-4.ogg
+backfiring vehicle by nsstudios, CC0-1.0, https://freesound.org/people/nsstudios/sounds/351738/
+  pop-heavy-5.ogg
+impact-stone-heavy.wav by kasparsj, CC0-1.0, https://freesound.org/people/kasparsj/sounds/513694/
+  rock-heavy-0.ogg
+Foley_Rocks_Stones_Impacts_Mono.wav by Nox_Sound, CC0-1.0, https://freesound.org/people/Nox_Sound/sounds/567701/
+  rock-heavy-1.ogg, rock-heavy-2.ogg, rock-heavy-3.ogg
+Stone crash by discofield, CC0-1.0, https://freesound.org/people/discofield/sounds/711657/
+  rock-heavy-4.ogg
+Small Rock and Stone Hits.wav by lolamadeus, CC0-1.0, https://freesound.org/people/lolamadeus/sounds/179365/
+  rock-light-0.ogg, rock-light-1.ogg, rock-light-2.ogg, rock-light-3.ogg, rock-light-4.ogg
+Rocks - hits by JoseDu, CC0-1.0, https://freesound.org/people/JoseDu/sounds/328926/
+  rock-light-5.ogg, rock-light-6.ogg, rock-light-7.ogg, rock-light-8.ogg
+Wood Crack 5 by utsuru, CC0-1.0, https://freesound.org/people/utsuru/sounds/183450/
+  snap-heavy-0.ogg
+Wood Crack 1 by utsuru, CC0-1.0, https://freesound.org/people/utsuru/sounds/183453/
+  snap-heavy-1.ogg
+branch break snap crunch nice.wav by kyles, CC0-1.0, https://freesound.org/people/kyles/sounds/452109/
+  snap-heavy-2.ogg
+Medium Thud 1 by sgrowe, CC0-1.0, https://freesound.org/people/sgrowe/sounds/342535/
+  thump-heavy-0.ogg
+S019_Landing_Impact_Mono.wav by P%C3%B3l, CC0-1.0, https://freesound.org/people/P%C3%B3l/sounds/385933/
+  thump-heavy-1.ogg
+Small Thuds by Nightflame, CC0-1.0, https://freesound.org/people/Nightflame/sounds/397601/
+  thump-heavy-2.ogg, thump-heavy-3.ogg, thump-heavy-4.ogg, thump-heavy-5.ogg
+FXSaSc Wood Tree Trunk Impact Ground Forest 5 Variants by Profispiesser, CC0-1.0, https://freesound.org/people/Profispiesser/sounds/550918/
+  wood-heavy-0.ogg, wood-heavy-1.ogg, wood-heavy-2.ogg
+wooden-crate-break1.wav by DeltaCode, CC0-1.0, https://freesound.org/people/DeltaCode/sounds/667653/
+  wood-heavy-3.ogg
+wooden-crate-break2.wav by DeltaCode, CC0-1.0, https://freesound.org/people/DeltaCode/sounds/667652/
+  wood-heavy-4.ogg
+wooden-crate-impact1.wav by DeltaCode, CC0-1.0, https://freesound.org/people/DeltaCode/sounds/667655/
+  wood-light-0.ogg
+wooden-crate-impact2.wav by DeltaCode, CC0-1.0, https://freesound.org/people/DeltaCode/sounds/667654/
+  wood-light-1.ogg

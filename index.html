@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>리얼리스틱 카 한글판</title>
+<link rel="icon" href="data:," />
+<style>html,body{background:#d9c9a8;height:100%;margin:0;overflow:hidden}#view{touch-action:none;outline:none;width:100%;height:100%;display:block;position:fixed;inset:0}#cover{pointer-events:none;background:#d9c9a8;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}#loading{color:#1c150a;letter-spacing:.04em;font:500 13px/1.6 ui-monospace,Cascadia Mono,Consolas,Malgun Gothic,Apple SD Gothic Neo,monospace}.hud{pointer-events:none;letter-spacing:.02em;color:#fff;text-shadow:0 1px 2px #0000008c;font:500 11px/1 ui-monospace,Cascadia Mono,Consolas,monospace;position:fixed}#keys{white-space:nowrap;align-items:center;gap:5px;display:flex;bottom:8px;right:12px}#keys kbd{font:inherit;text-align:center;color:#fff;min-width:9px;text-shadow:none;background:#14100a80;border:1px solid #ffffff47;border-radius:4px;padding:1px 5px}#keys kbd.down{color:#1c150a;background:#fff}#keys .gap{width:7px}#keys .first{margin-right:6px;font-weight:600;display:none}#keys.asleep .first{display:inline}#keys.asleep kbd{opacity:.6}#credit{color:#ffffffd1;font-size:10px;bottom:9px;left:12px}#dash{text-shadow:none;background:#14100a6b;border-radius:7px;align-items:flex-end;gap:10px;padding:7px 10px;display:flex;bottom:30px;right:12px}#speed{text-align:right;min-width:40px;font-size:24px}.unit{opacity:.75;margin-left:3px;font-size:10px}#gear{text-align:center;color:#ffd38a;min-width:16px;font-size:24px}#springs{grid-template-columns:7px 7px;gap:2px;display:grid}#springs span{background:#ffffff2e;border-radius:1px;width:7px;height:11px;display:block;overflow:hidden}#springs i{transform-origin:bottom;background:#fff;width:100%;height:100%;display:block}#side{text-transform:uppercase;letter-spacing:.06em;flex-direction:column;gap:4px;font-size:9px;display:flex}#surface{opacity:.85;min-width:40px}#tc,#abs{opacity:.22}#tc.on,#abs.on{opacity:1;color:#ffd38a}#lost{text-align:center;color:#fff;background:#1c150a;justify-content:center;align-items:center;padding:24px;font:500 14px/1.5 ui-monospace,Consolas,monospace;display:flex;position:fixed;inset:0}#lost[hidden]{display:none}#panel{pointer-events:auto;font-family:ui-monospace,Cascadia Mono,Consolas,Malgun Gothic,Apple SD Gothic Neo,monospace;top:12px;left:12px}#panel .box{-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);background:#14100a8c;border:1px solid #ffffff38;border-radius:8px;flex-direction:column;gap:7px;padding:8px 10px;display:flex}#panel .row{align-items:center;gap:6px;display:flex}#panel .name{opacity:.85;min-width:58px}#panel button{font:inherit;color:#fff;cursor:pointer;text-shadow:none;background:#ffffff24;border:1px solid #ffffff47;border-radius:5px;padding:2px 8px}#panel button.on{color:#1c150a;background:#fff}#panel button:hover{border-color:#fff9}#panel input[type=range]{accent-color:#ffd38a;width:110px}#panel .val{text-align:right;opacity:.9;min-width:34px}#panel .more{opacity:.85}#panel .hint{display:none}#panel #panel-adv{flex-direction:column;gap:7px;display:none}#panel.adv #panel-adv{display:flex}@media (max-width:720px){#credit{display:none}#panel .name{min-width:46px}#panel input[type=range]{width:84px}}</style>
+  <script type="module" crossorigin src="./assets/index-DIpI5pgi.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/yard-CcYH6mNM.js">
+</head>
+<body>
+<canvas id="view" tabindex="0"></canvas>
+<div id="panel" class="hud"></div>
+<div id="cover"><span id="loading">불러오는 중…</span></div>
+<div id="dash" class="hud">
+  <div><span id="speed">0</span><span class="unit">km/h</span></div>
+  <div id="gear">1</div>
+  <div id="springs"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+  <div id="side"><span id="surface">tarmac</span><span><span id="tc">TC</span> <span id="abs">ABS</span></span></div>
+</div>
+<div id="keys" class="hud">
+  <span class="first">키를 쓰려면 화면을 클릭하세요:</span>
+  <kbd data-k="w">W</kbd><kbd data-k="a">A</kbd><kbd data-k="s">S</kbd><kbd data-k="d">D</kbd> 주행<span class="gap"></span>
+  <kbd data-k="space">Space</kbd> 사이드브레이크<span class="gap"></span>
+  <kbd data-k="v">V</kbd> 시점<span class="gap"></span>
+  <kbd data-k="r">R</kbd> 리셋
+</div>
+<div id="credit" class="hud">타이어: Dechode의 Godot Advanced Vehicle · 기어박스와 보조 장치: David Shoemaker의 Godot Easy Vehicle Physics · Rapier 물리 엔진</div>
+<div id="lost" hidden>그래픽 카드가 응답하지 않습니다. 새로고침하거나 브라우저를 다시 시작하세요.</div>
+</body>
+</html>

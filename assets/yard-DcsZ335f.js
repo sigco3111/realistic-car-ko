@@ -1,0 +1,1 @@
+export{r as place}from"./yard-CcYH6mNM.js";

@@ -1,0 +1,387 @@
+{
+ "engines": {
+  "rally": {
+   "loops": [
+    {
+     "file": "engine-rally-0.ogg",
+     "rpm": 750,
+     "gain": 0.7
+    },
+    {
+     "file": "engine-rally-1.ogg",
+     "rpm": 3360,
+     "gain": 1
+    },
+    {
+     "file": "engine-rally-2.ogg",
+     "rpm": 4099,
+     "gain": 1
+    },
+    {
+     "file": "engine-rally-3.ogg",
+     "rpm": 4954,
+     "gain": 1
+    },
+    {
+     "file": "engine-rally-4.ogg",
+     "rpm": 5775,
+     "gain": 1
+    },
+    {
+     "file": "engine-rally-5.ogg",
+     "rpm": 6732,
+     "gain": 1
+    }
+   ],
+   "pops": "pop",
+   "offTone": 1500,
+   "offGain": 0.5
+  }
+ },
+ "loops": {
+  "road": {
+   "file": "loop-road.ogg",
+   "gain": 1
+  },
+  "gravel": {
+   "file": "loop-gravel.ogg",
+   "gain": 1
+  },
+  "squeal": {
+   "file": "loop-squeal.ogg",
+   "gain": 1
+  },
+  "wind": {
+   "file": "loop-wind.ogg",
+   "gain": 1
+  },
+  "scrape": {
+   "file": "loop-scrape.ogg",
+   "gain": 1
+  }
+ },
+ "hits": {
+  "metal": {
+   "heavy": [
+    {
+     "file": "metal-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-heavy-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-heavy-5.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-heavy-6.ogg",
+     "gain": 1
+    }
+   ],
+   "light": [
+    {
+     "file": "metal-light-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-5.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-6.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-7.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-8.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-9.ogg",
+     "gain": 1
+    },
+    {
+     "file": "metal-light-10.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "rock": {
+   "heavy": [
+    {
+     "file": "rock-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-heavy-4.ogg",
+     "gain": 1
+    }
+   ],
+   "light": [
+    {
+     "file": "rock-light-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-5.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-6.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-7.ogg",
+     "gain": 1
+    },
+    {
+     "file": "rock-light-8.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "wood": {
+   "heavy": [
+    {
+     "file": "wood-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "wood-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "wood-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "wood-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "wood-heavy-4.ogg",
+     "gain": 1
+    }
+   ],
+   "light": [
+    {
+     "file": "wood-light-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "wood-light-1.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "snap": {
+   "heavy": [
+    {
+     "file": "snap-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "snap-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "snap-heavy-2.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "figure": {
+   "heavy": [
+    {
+     "file": "figure-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "figure-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "figure-heavy-2.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "thump": {
+   "heavy": [
+    {
+     "file": "thump-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "thump-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "thump-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "thump-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "thump-heavy-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "thump-heavy-5.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "land": {
+   "heavy": [
+    {
+     "file": "land-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "land-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "land-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "land-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "land-heavy-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "land-heavy-5.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "gear": {
+   "heavy": [
+    {
+     "file": "gear-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "gear-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "gear-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "gear-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "gear-heavy-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "gear-heavy-5.ogg",
+     "gain": 1
+    },
+    {
+     "file": "gear-heavy-6.ogg",
+     "gain": 1
+    }
+   ]
+  },
+  "pop": {
+   "heavy": [
+    {
+     "file": "pop-heavy-0.ogg",
+     "gain": 1
+    },
+    {
+     "file": "pop-heavy-1.ogg",
+     "gain": 1
+    },
+    {
+     "file": "pop-heavy-2.ogg",
+     "gain": 1
+    },
+    {
+     "file": "pop-heavy-3.ogg",
+     "gain": 1
+    },
+    {
+     "file": "pop-heavy-4.ogg",
+     "gain": 1
+    },
+    {
+     "file": "pop-heavy-5.ogg",
+     "gain": 1
+    }
+   ]
+  }
+ }
+}

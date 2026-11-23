@@ -1,0 +1,57 @@
+Realistic car: who made what
+
+The tyre model
+  Dechode, Godot Advanced Vehicle, MIT License
+  https://github.com/Dechode/Godot-Advanced-Vehicle
+  The Pacejka curve, combined slip and load sensitivity, ported and changed (commit e055cc3).
+
+The gearbox, suspension rates and assists
+  David Shoemaker, Dechode and Baron Wittman, Godot Easy Vehicle Physics, MIT License
+  https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics
+  Ideas and logic ported from its vehicle.gd and wheel.gd (commit c392257). None of its assets are here.
+
+Righting the car
+  Bruno Simon, folio-2025, MIT License
+  https://github.com/brunosimon/folio-2025
+  What counts as upside down, and hopping to turn over. None of his art, sound or other code is here.
+
+The physics
+  Dimforge, Rapier 0.17.3, Apache-2.0
+  https://github.com/dimforge/rapier.js
+
+The rendering
+  three.js authors, three.js 0.186.1, MIT License
+  https://github.com/mrdoob/three.js
+
+The car
+  Patch: Vireo rally, CC0 1.0. Its makers and sponsors are made up.
+
+The mannequin
+  Patch: the 1.8 m scale figure, CC0 1.0
+  Its clips are retargeted from Quaternius' Universal Animation Library 1 and 2, CC0 1.0
+  https://quaternius.com/packs/universalanimationlibrary.html
+
+The sounds
+  Real recordings from Freesound (https://freesound.org), all CC0 1.0, cut and levelled by Patch.
+  Every recording and its author is listed in audio/CREDITS.txt.
+
+The rally stage's ground, sky and rocks, all CC0 1.0, from Poly Haven (https://polyhaven.com)
+  Road gravel: Forest Ground 04, Rob Tuytel and Rico Cilliers
+  Sealed road: Asphalt 02, Rob Tuytel
+  Forest floor: Forest Leaves 02, Rob Tuytel
+  Meadow: Leafy Grass, Charlotte Baglioni
+  Bare rock: Lichen Rock, Rico Cilliers
+  Sky: Kloofendal 38d Partly Cloudy (Pure Sky), Greg Zaal and Jarod Guest
+  Boulders: Rock Moss Set 01, Kless Gyzen
+
+The rally stage's trees
+  Daniel Greenheck, ez-tree, MIT License: the pines and aspens are grown with it, and the leaves are its own
+  https://github.com/dgreenheck/ez-tree
+  Bark: ambientCG, Bark 002 and Bark 003, CC0 1.0
+  https://ambientcg.com
+
+The stage's road and land, its grass, poles, boards and gantry
+  Patch: made in code, MIT License. The rally and tyre names on the banner are made up.
+
+The yard, its textures, the tyre marks and the dust
+  Patch: made in code, CC0 1.0

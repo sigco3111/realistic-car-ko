@@ -1,0 +1,44 @@
+MIT License
+
+Copyright (c) 2026 Patch
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+Third-party parts
+
+src/car.js ports and changes parts of:
+- Godot Advanced Vehicle, Copyright (c) 2021 Dechode, MIT License,
+  third-party/LICENSE-godot-advanced-vehicle.txt.
+  https://github.com/Dechode/Godot-Advanced-Vehicle (commit e055cc3)
+- Godot Easy Vehicle Physics, Copyright (c) 2024 David Shoemaker, Copyright (c) 2021
+  Dechode, Copyright (c) 2024 Baron Wittman, MIT License,
+  third-party/LICENSE-godot-easy-vehicle-physics.txt.
+  https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics (commit c392257)
+- folio-2025, Copyright (c) 2025 Bruno Simon, MIT License,
+  third-party/LICENSE-folio-2025.txt.
+  https://github.com/brunosimon/folio-2025 (commit 41046b5)
+
+Installed by npm: Rapier (Apache-2.0, Dimforge,
+third-party/LICENSE-rapier.txt); three.js (MIT, the three.js authors).
+
+Art and sound, all CC0 1.0: the cars and the mannequin (public/models), Patch's, the
+mannequin's clips retargeted from Quaternius' Universal Animation Library 1 and 2;
+the impact sounds (public/audio) from Kenney's Impact Sounds; the pictures in
+thumbs/ (stills of this demo, Patch).
